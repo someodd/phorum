@@ -37,3 +37,4 @@ Here are some commands related to banning:
   * Captcha-like system
   * Build with nix
   * Debian package + systemd daemon
+  * Search!
