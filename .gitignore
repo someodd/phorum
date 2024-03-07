@@ -7,3 +7,4 @@ result
 gopherdashboard-deb/
 *.deb
 gopherdashboard-*.zip
+.pgdata/
