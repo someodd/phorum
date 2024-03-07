@@ -38,3 +38,5 @@ Here are some commands related to banning:
   * Build with nix
   * Debian package + systemd daemon
   * Search!
+  * Post rate limit
+  * Configuration file

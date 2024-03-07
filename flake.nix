@@ -44,6 +44,7 @@
             tools = hp: {
               inherit (hp) fourmolu;
               ghcid = null;
+	      gopher = pkgs.gopher;
               postgresql = pkgs.postgresql;
             };
 
