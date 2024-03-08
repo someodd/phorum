@@ -44,18 +44,12 @@ Here are some features:
   * Post threads and replies
   * Ban system
   * Post rate limiting
+  * Customizable! TOML configuration file!
 
 ## Features probably coming soon
 
-  * Currently has a `Config.hs` with many configurable parameters. Coming soon
-    is a config file to set these parameters. This also allows for
-    internationalization. This config file will also allow you to set some server
-    parameters.
   * Text wrapping
   * Captcha-like system
-  * Build with nix
   * Debian package + systemd daemon
   * Search!
-  * Configuration file
   * Post length limit (tools!)
-  * Configurable listen/name etc for spacecookie

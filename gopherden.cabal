@@ -60,6 +60,7 @@ library
       bytestring,
       postgresql-simple,
       regex-posix,
-      time
+      time,
+      tomland,
+      text
   default-language: GHC2021
-  --default-language: Haskell2010

@@ -15,19 +15,20 @@ import Data.Maybe (listToMaybe, isNothing, isJust)
 import Database.PostgreSQL.Simple.FromRow
 import Data.Time.Clock
 import Data.Functor (void)
+import Data.Text (unpack, pack, Text)
 
 -- FIXME: just define PostDB
 data PostInsert = PostInsert {
-    message   :: String,
+    message   :: Text,
     replyTo   :: Maybe Integer,
-    postIP    :: String       -- New field for IP address
+    postIP    :: Text       -- New field for IP address
 } deriving (Show)
 
 data PostDB = PostDB {
     postId      :: Integer,
-    message     :: String,
+    message     :: Text,
     replyTo     :: Maybe Integer,
-    postIP      :: String,
+    postIP      :: Text,
     createdAt   :: UTCTime,
     bannedForPost :: Bool
 } deriving (Show)
@@ -42,18 +43,18 @@ instance FromRow PostDB where
     fromRow = PostDB <$> field <*> field <*> field <*> field <*> field <*> field
 
 -- Function to connect to your specific database
-connectDb :: IO Connection
-connectDb = connect defaultConnectInfo {
-    connectHost = "localhost",
-    connectPort = 5432,
-    connectUser = "your_username",
-    connectPassword = "your_password",
-    connectDatabase = "your_database"
+connectDb :: DatabaseConnectionConfig -> IO Connection
+connectDb databaseConnection = connect defaultConnectInfo {
+    connectHost = unpack $ databaseConnection.connectHost,
+    connectPort = fromIntegral $ databaseConnection.connectPort,
+    connectUser = unpack $ databaseConnection.connectUser,
+    connectPassword = unpack $ databaseConnection.connectPassword,
+    connectDatabase = unpack $ databaseConnection.connectDatabase
 }
 
 -- Function to get all threads, sorted by the freshest activity
-getThreadsSortedByFreshest :: IO [PostDB]
-getThreadsSortedByFreshest = bracket connectDb close $ \conn -> do
+getThreadsSortedByFreshest :: DatabaseConnectionConfig -> IO [PostDB]
+getThreadsSortedByFreshest databaseConnection = bracket (connectDb databaseConnection) close $ \conn -> do
     query_ conn $
         "WITH ThreadActivity AS ( \
         \    SELECT \
@@ -73,31 +74,32 @@ getThreadsSortedByFreshest = bracket connectDb close $ \conn -> do
         \WHERE p.replyTo IS NULL \
         \ORDER BY rt.rank" :: IO [PostDB]
 
+-- FIXME: maybe make return True if threads were pruned?
 -- Function to check and maintain the maximum number of threads
-maintainMaximumThreads :: IO ()
-maintainMaximumThreads = bracket connectDb close $ \conn -> do
+maintainMaximumThreads :: Config -> IO ()
+maintainMaximumThreads config = bracket (connectDb config.databaseConnection) close $ \conn -> do
     -- Count the number of threads (posts with replyTo IS NULL)
     [Only threadCount] <- query_ conn "SELECT COUNT(*) FROM app_schema.posts WHERE replyTo IS NULL" :: IO [Only Integer]
-    when (threadCount > maximumThreads) $ do
+    when (threadCount > config.general.maximumThreads) $ do
         -- Find the thread with the smallest ID (oldest thread)
         [Only smallestThreadId] <- query_ conn "SELECT id FROM app_schema.posts WHERE replyTo IS NULL ORDER BY id ASC LIMIT 1" :: IO [Only Integer]
         -- Delete all replies to the thread about to be deleted. not needed because cascade. FIXME
         --execute conn "DELETE FROM posts WHERE replyTo = ?" (Only smallestThreadId)
         -- Delete the thread with the smallest ID
         execute conn "DELETE FROM app_schema.posts WHERE id = ?" (Only smallestThreadId)
-        putStrLn $ languageDeletedThreadWithId ++ show smallestThreadId
+        pure ()
 
 -- Counts the number of replies to a given thread ID
-countReplies :: Integer -> IO Int
-countReplies threadId = bracket connectDb close $ \conn -> do
+countReplies :: DatabaseConnectionConfig -> Integer -> IO Int
+countReplies databaseConnection threadId = bracket (connectDb databaseConnection) close $ \conn -> do
     [Only count] <- query conn "SELECT COUNT(*) FROM app_schema.posts WHERE replyTo = ?" (Only threadId) :: IO [Only Int]
     return count
 
 {- | Get three latest replies to a given thread, but return them in ascending order (freshest last).
 
 -}
-getThreeLatestReplies :: Integer -> IO [PostDB]
-getThreeLatestReplies threadId = bracket connectDb close $ \conn -> do
+getThreeLatestReplies :: DatabaseConnectionConfig -> Integer -> IO [PostDB]
+getThreeLatestReplies databaseConnection threadId = bracket (connectDb databaseConnection) close $ \conn -> do
     query conn "SELECT id, message, replyTo, postIP, createdAt, bannedForPost FROM ( \
                 \SELECT id, message, replyTo, postIP, createdAt, bannedForPost \
                 \FROM app_schema.posts \
@@ -125,15 +127,15 @@ insertion is not successful, the function returns a Left value with an error.
 message.
 
 -}
-insertPost :: PostInsert -> IO (Either String Integer)
-insertPost post = bracket connectDb close $ \conn -> do
+insertPost :: Config -> PostInsert -> IO (Either Text Integer)
+insertPost config post = bracket (connectDb config.databaseConnection) close $ \conn -> do
     -- Check if the postIP is in the banned_ips table
-    bannedIps <- query conn "SELECT reason FROM app_schema.banned_ips WHERE ip = ?" (Only (post.postIP)) :: IO [Only String]
+    bannedIps <- query conn "SELECT reason FROM app_schema.banned_ips WHERE ip = ?" (Only (post.postIP)) :: IO [Only Text]
     if null bannedIps
     then do
         -- IP is not banned, check the rate limits for replies and threads
-        lastReply <- checkRateReply conn post.postIP rateLimitMinutesNewReply
-        lastThread <- checkRateThread conn post.postIP rateLimitMinutesNewThread
+        lastReply <- checkRateReply conn post.postIP config.general.rateLimitMinutesNewReply
+        lastThread <- checkRateThread conn post.postIP config.general.rateLimitMinutesNewThread
         -- FIXME: this needs to have different message for new threads and replies for ratelimit! different flow
         if (isJust post.replyTo && lastReply) || (isNothing post.replyTo && lastThread)
         then do
@@ -141,46 +143,46 @@ insertPost post = bracket connectDb close $ \conn -> do
             result <- query conn "INSERT INTO app_schema.posts (message, replyTo, postIP) VALUES (?, ?, ?) RETURNING id" post :: IO [Only Integer]
             case result of
                 [Only i] -> return $ Right i
-                _ -> return $ Left languageFailedToInsertPost
-        else return $ Left languagePostRateLimitExceeded
-    else return $ Left $ languageYouWereBannedLabel ++ (maybe "" fromOnly $ listToMaybe bannedIps)
+                _ -> return $ Left config.language.failedToInsertPost
+        else return $ Left config.language.postRateLimitExceeded
+    else return $ Left $ config.language.youWereBannedLabel <> (maybe "" fromOnly $ listToMaybe bannedIps)
 
 -- | Returns True if the IP has *not* made a reply in the last n minutes.
-checkRateReply :: Connection -> String -> Int -> IO Bool
+checkRateReply :: Connection -> Text -> Int -> IO Bool
 checkRateReply conn ip minutes = do
     result <- query conn "SELECT EXISTS(SELECT 1 FROM app_schema.posts WHERE postIP = ? AND replyTo IS NOT NULL AND createdAt > NOW() - INTERVAL '? minutes')" (ip, minutes) :: IO [Only Bool]
     return $ not $ maybe False id $ listToMaybe $ map fromOnly result
 
 -- | Returns True if the IP has *not* made a thread in the last n minutes.
-checkRateThread :: Connection -> String -> Int -> IO Bool
+checkRateThread :: Connection -> Text -> Int -> IO Bool
 checkRateThread conn ip minutes = do
     result <- query conn "SELECT EXISTS(SELECT 1 FROM app_schema.posts WHERE postIP = ? AND replyTo IS NULL AND createdAt > NOW() - INTERVAL '? minutes')" (ip, minutes) :: IO [Only Bool]
     return $ not $ maybe False id $ listToMaybe $ map fromOnly result
 
 -- Function to get a thread by ID (replyTo must be NULL)
-getThreadById :: Integer -> IO (Maybe PostDB)
-getThreadById postId = bracket connectDb close $ \conn -> do
+getThreadById :: DatabaseConnectionConfig -> Integer -> IO (Maybe PostDB)
+getThreadById databaseConnection postId = bracket (connectDb databaseConnection) close $ \conn -> do
     -- Query to select the post where id matches and replyTo is NULL
     posts <- query conn "SELECT id, message, replyTo, postIP, createdAt, bannedForPost FROM app_schema.posts WHERE id = ? AND replyTo IS NULL" (Only postId) :: IO [PostDB]
     -- Convert the list to Maybe Post (Nothing if the list is empty, Just post if not)
     return $ listToMaybe posts
 
 -- Function to get all replies to a specific thread ID
-getRepliesByThreadId :: Integer -> IO [PostDB]
-getRepliesByThreadId threadId = bracket connectDb close $ \conn -> do
+getRepliesByThreadId :: DatabaseConnectionConfig -> Integer -> IO [PostDB]
+getRepliesByThreadId databaseConnection threadId = bracket (connectDb databaseConnection) close $ \conn -> do
     -- Query to select all posts where replyTo matches the given thread ID
     query conn "SELECT id, message, replyTo, postIP, createdAt, bannedForPost FROM app_schema.posts WHERE replyTo = ?" (Only threadId) :: IO [PostDB]
 
 -- Function to get all original threads
-getAllThreads :: IO [PostDB]
-getAllThreads = bracket connectDb close $ \conn -> do
+getAllThreads :: DatabaseConnectionConfig -> IO [PostDB]
+getAllThreads databaseConnection = bracket (connectDb databaseConnection) close $ \conn -> do
     -- Query to select all posts where replyTo is NULL
     query_ conn "SELECT id, message, replyTo, postIP, createdAt, bannedForPost FROM app_schema.posts WHERE replyTo IS NULL" :: IO [PostDB]
 
-banIP :: Integer -> String -> Bool -> IO ()
-banIP postId reason delete = bracket connectDb close $ \conn -> do
+banIP :: Config -> Integer -> String -> Bool -> IO ()
+banIP config postId reason delete = bracket (connectDb config.databaseConnection) close $ \conn -> do
     -- Fetch the post's IP using postId
-    post <- query conn "SELECT postIP FROM app_schema.posts WHERE id = ?" (Only postId) :: IO [Only String]
+    post <- query conn "SELECT postIP FROM app_schema.posts WHERE id = ?" (Only postId) :: IO [Only Text]
     case post of
       [Only ip] -> do
         -- Insert into banned_ips (assume reason is a placeholder here)
@@ -190,12 +192,12 @@ banIP postId reason delete = bracket connectDb close $ \conn -> do
              void $ execute conn "DELETE FROM app_schema.posts WHERE id = ?" (Only postId)
         else -- Mark the post as bannedForPost
              void $ execute conn "UPDATE app_schema.posts SET bannedForPost = TRUE WHERE id = ?" (Only postId)
-        putStrLn $ languageIpBannedSuccessfully ++ ip
-      _ -> putStrLn languagePostNotFoundOrIpMissing
+        putStrLn . unpack $ config.language.ipBannedSuccessfully <> ip
+      _ -> putStrLn . unpack $ config.language.postNotFoundOrIpMissing
 
 -- Function to unban an IP
-unbanIP :: String -> IO ()
-unbanIP ip = bracket connectDb close $ \conn -> do
+unbanIP :: Config -> String -> IO ()
+unbanIP config ip = bracket (connectDb config.databaseConnection) close $ \conn -> do
     -- Remove the IP from the banned_ips table
     void $ execute conn "DELETE FROM app_schema.banned_ips WHERE ip = ?" (Only ip)
     
@@ -204,16 +206,16 @@ unbanIP ip = bracket connectDb close $ \conn -> do
     -- the information that a post was once associated with a banned IP.
     void $ execute conn "UPDATE app_schema.posts SET bannedForPost = FALSE WHERE postIP = ?" (Only ip)
     
-    putStrLn $ languageIpUnbannedSuccess ++ ip
+    putStrLn . unpack $ (config.language.ipUnbannedSuccess) <> (pack ip)
 
 -- Assuming the import of necessary modules and definitions above
-listBannedIPs :: IO [(String, String)]
-listBannedIPs = bracket connectDb close $ \conn -> do
+listBannedIPs :: DatabaseConnectionConfig -> IO [(String, String)]
+listBannedIPs databaseConnection = bracket (connectDb databaseConnection) close $ \conn -> do
     query_ conn "SELECT ip, reason FROM app_schema.banned_ips" :: IO [(String, String)]
 
 
-initializeDatabase :: IO ()
-initializeDatabase = bracket connectDb close $ \conn -> do
+initializeDatabase :: DatabaseConnectionConfig -> IO ()
+initializeDatabase databaseConnection = bracket (connectDb databaseConnection) close $ \conn -> do
     execute_ conn "CREATE SCHEMA IF NOT EXISTS app_schema;"
     execute_ conn "SET search_path TO app_schema;"
 

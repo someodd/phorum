@@ -3,7 +3,11 @@
 -}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 module TextBuild where
+
+import Data.Text (Text, lines, unlines, length, replicate, pack)
+import Prelude hiding (lines, unlines, length, replicate)
 
 {- | Create a fancy ASCII-art style text box for content.
 
@@ -17,7 +21,7 @@ Features:
   - Configurable characters for the horizontal, vertical, and corner border components
 
 -}
-textBuildBox :: String -> String -> Char -> Char -> Char -> Int -> Int -> Int -> String
+textBuildBox :: Text -> Text -> Char -> Char -> Char -> Int -> Int -> Int -> Text
 textBuildBox header body horizontalBorder verticalBorder cornerDecor fileMinimumWidth fileMaximumWidth padding =
   let bodyLines = lines body
       initialBoxWidth = maximum (map length bodyLines) + (padding * 2) + 2 -- +2 for the vertical borders
@@ -26,9 +30,8 @@ textBuildBox header body horizontalBorder verticalBorder cornerDecor fileMinimum
       headerSpace = finalBoxWidth - length header - 2 -- -2 for the corner decorations
       leftHeaderPadding = (headerSpace `div` 2)
       rightHeaderPadding = headerSpace - leftHeaderPadding
-      topBorder = cornerDecor : replicate leftHeaderPadding horizontalBorder ++ header ++ replicate rightHeaderPadding horizontalBorder ++ [cornerDecor]
-      bottomBorder = [cornerDecor] ++ replicate (finalBoxWidth - 2) horizontalBorder ++ [cornerDecor]
-      paddedBody = map (\line -> verticalBorder : ' ' : line ++ replicate (finalBoxWidth - length line - 4) ' ' ++ [' ', verticalBorder]) bodyLines
-      emptyLine = [verticalBorder] ++ replicate (finalBoxWidth - 2) ' ' ++ [verticalBorder]
+      topBorder = pack [cornerDecor] <> replicate leftHeaderPadding (pack [horizontalBorder]) <> header <> replicate rightHeaderPadding (pack [horizontalBorder]) <> pack [cornerDecor]
+      bottomBorder = pack [cornerDecor] <> replicate (finalBoxWidth - 2) (pack [horizontalBorder]) <> pack [cornerDecor]
+      paddedBody = map (\line -> pack [verticalBorder] <> " " <> line <> replicate (finalBoxWidth - length line - 4) " " <> pack [' ', verticalBorder]) bodyLines
+      emptyLine = pack [verticalBorder] <> replicate (finalBoxWidth - 2) " " <> pack [verticalBorder]
   in unlines (topBorder : emptyLine : paddedBody ++ [emptyLine, bottomBorder])
-

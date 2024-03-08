@@ -2,6 +2,8 @@
 
 -}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module CLI (entryPoint) where
 
@@ -9,6 +11,7 @@ import Server (runServer)
 import Database (banIP, unbanIP, listBannedIPs)
 
 import Options.Applicative
+import Config
 
 -- Some say partials are bad, but I'm lazy and I frankly just generate a lot of the CLI stuff.
 data Command
@@ -45,12 +48,14 @@ parseBanIP = BanIP
      <> help "Delete the post as well as banning the IP" )
 
 entryPoint :: IO ()
-entryPoint = runCLI =<< execParser opts
-  where
-    opts = info (commands <**> helper)
-      ( fullDesc
-     <> progDesc "Run server or ban an IP"
-     <> header "server-cli - a simple CLI for managing your server" )
+entryPoint = do
+  config <- getConfig
+  runCLI config =<< execParser opts
+ where
+  opts = info (commands <**> helper)
+    ( fullDesc
+    <> progDesc "Run server or ban an IP"
+    <> header "server-cli - a simple CLI for managing your server" )
 
 commands :: Parser Command
 commands = subparser
@@ -60,18 +65,18 @@ commands = subparser
  <> command "list_bans" (info parseListBans (progDesc "List all banned IPs"))
   )
 
-runCLI :: Command -> IO ()
-runCLI LaunchServer = runServer
-runCLI (BanIP postId reason delete) = do
+runCLI :: Config -> Command -> IO ()
+runCLI config LaunchServer = runServer config
+runCLI config (BanIP postId reason delete) = do
   putStrLn $ "Banning IP for post: " ++ show postId ++ " for reason: " ++ reason
-  banIP postId reason delete
+  banIP config postId reason delete
   putStrLn "Done."
-runCLI (UnbanIP ipAddr) = do
+runCLI config (UnbanIP ipAddr) = do
   putStrLn $ "Unbanning IP: " ++ ipAddr
-  unbanIP ipAddr
+  unbanIP config ipAddr
   putStrLn "IP unbanned successfully."
-runCLI ListBans = do
+runCLI config ListBans = do
   putStrLn "Listing all banned IPs:"
-  bannedIPs <- listBannedIPs
+  bannedIPs <- listBannedIPs config.databaseConnection
   mapM_ (\(ip, reason) -> putStrLn $ ip ++ " - " ++ reason) bannedIPs
 

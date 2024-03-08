@@ -14,18 +14,45 @@ module TextViews
 import Database
 import TextBuild
 import Config
-import ViewHelpers
+import ViewHelpers ( helperPostMeta )
+
+import Data.Text (Text, unpack, take, unlines)
+import Prelude hiding (take, unlines)
+
+-- | Convert a `Text` to a `Char`. Defaults to a space.
+textToChar :: Text -> Char
+textToChar text = 
+  case unpack (take 1 text) of
+    [c] -> c
+    _   -> ' '
 
 {- | Fancy text file presentation for a thread, displaying the original post and all of its replies.
 
 Lots of ASCII art involved.
 
 -}
-textViewThread :: PostDB -> [PostDB] -> String
-textViewThread op replies =
+textViewThread :: Config -> PostDB -> [PostDB] -> Text
+textViewThread config op replies =
     let
-        threadMetaInfo = helperPostMeta op
-        opBox = textBuildBox threadMetaInfo op.message fileThreadOpBorderHorizontal fileThreadOpBorderVertical fileThreadOpBorderCorner fileThreadOpMinimumWidth fileThreadOpMaximumWidth fileThreadOpPadding
-        replyBoxes = map (\reply -> textBuildBox (helperPostMeta reply) reply.message fileThreadReplyBorderHorizontal fileThreadReplyBorderVertical fileThreadReplyBorderCorner fileThreadReplyMinimumWidth fileThreadReplyMaximumWidth fileThreadReplyPadding) replies
+        threadMetaInfo = helperPostMeta config op
+        opBox = textBuildBox
+            threadMetaInfo
+            op.message
+            (textToChar config.fileViews.threadOpBorderHorizontal)
+            (textToChar config.fileViews.threadOpBorderVertical)
+            (textToChar config.fileViews.threadOpBorderCorner)
+            config.fileViews.threadOpMinimumWidth
+            config.fileViews.threadOpMaximumWidth
+            config.fileViews.threadOpPadding
+        replyBoxes = map
+            (\reply -> textBuildBox (helperPostMeta config reply)
+            reply.message
+            (textToChar config.fileViews.threadReplyBorderHorizontal)
+            (textToChar config.fileViews.threadReplyBorderVertical)
+            (textToChar config.fileViews.threadReplyBorderCorner)
+            config.fileViews.threadReplyMinimumWidth
+            config.fileViews.threadReplyMaximumWidth
+            config.fileViews.threadReplyPadding)
+            replies
     in
         unlines $ opBox : replyBoxes

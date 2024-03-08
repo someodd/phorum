@@ -2,6 +2,7 @@
 
 -}
 
+{-# LANGUAGE OverloadedStrings #-}
 module MenuBuild where
 
 import Network.Gopher hiding (GopherFileType (..), GopherMenuItem (..))
@@ -9,9 +10,12 @@ import Network.Gopher qualified as Gopher (GopherFileType (..), GopherMenuItem (
 import Data.ByteString.Char8 qualified as BC
 import Data.List (intercalate, isPrefixOf)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 
 toGopherMenuItems :: [GopherLine] -> [Gopher.GopherMenuItem]
-toGopherMenuItems = map (\(GopherLine itemType menuText selector maybeServerName maybePort) -> Gopher.Item (toGopherFileType itemType) (BC.pack menuText) (BC.pack selector) (BC.pack <$> maybeServerName) (read <$> maybePort))
+toGopherMenuItems = map (\(GopherLine itemType menuText selector maybeServerName maybePort) -> Gopher.Item (toGopherFileType itemType) (encodeUtf8 menuText) (encodeUtf8 selector) (encodeUtf8 <$> maybeServerName) (read . T.unpack <$> maybePort))
 
 toGopherFileType :: ItemType -> Gopher.GopherFileType
 toGopherFileType itemType = case itemType of
@@ -78,49 +82,49 @@ File type, menu text, selector, server name (optional), port (optional).
 
 None of the fields may use tabs.
 -}
-data GopherLine = GopherLine ItemType String String (Maybe String) (Maybe String)
+data GopherLine = GopherLine ItemType Text Text (Maybe Text) (Maybe Text)
 
-instance Show GopherLine where
-  show (GopherLine itemType menuText selector maybeServerName maybePort) =
-    show itemType ++ intercalate "\t" [menuText, selector, fromMaybe "" maybeServerName, fromMaybe "" maybePort]
+lineToText :: GopherLine -> Text
+lineToText (GopherLine itemType menuText selector maybeServerName maybePort) =
+    (T.pack $ show itemType) <> T.intercalate "\t" [menuText, selector, fromMaybe "" maybeServerName, fromMaybe "" maybePort]
 
-menuBuildHeading :: String -> GopherLine
-menuBuildHeading title = GopherLine InfoLine ("### " ++ title ++ " ###") "" Nothing Nothing
+menuBuildHeading :: Text -> GopherLine
+menuBuildHeading title = GopherLine InfoLine ("### " <> title <> " ###") "" Nothing Nothing
 
-menuBuildHeadingParticular :: String -> String -> String -> Bool -> Bool -> [GopherLine]
+menuBuildHeadingParticular :: Text -> Text -> Text -> Bool -> Bool -> [GopherLine]
 menuBuildHeadingParticular title decorLeft decorRight leadingBreak trailingBreak = do
-    (if leadingBreak then [menuBuildBlankLine] else []) ++ [GopherLine InfoLine (decorLeft ++ title ++ decorRight) "" Nothing Nothing] ++ (if trailingBreak then [menuBuildBlankLine] else [])
+    (if leadingBreak then [menuBuildBlankLine] else []) <> [GopherLine InfoLine (decorLeft <> title <> decorRight) "" Nothing Nothing] ++ (if trailingBreak then [menuBuildBlankLine] else [])
 
-menuBuildQueryLine :: String -> String -> GopherLine
+menuBuildQueryLine :: Text -> Text -> GopherLine
 menuBuildQueryLine string selector = GopherLine IndexSearchServer string selector Nothing Nothing
 
-menuBuildMenuLine :: String -> String -> GopherLine
+menuBuildMenuLine :: Text -> Text -> GopherLine
 menuBuildMenuLine label selector = GopherLine Directory label selector Nothing Nothing
 
-menuBuildFileLine :: String -> String -> GopherLine
+menuBuildFileLine :: Text -> Text -> GopherLine
 menuBuildFileLine label selector = GopherLine File label selector Nothing Nothing
 
 menuBuildBlankLine :: GopherLine
 menuBuildBlankLine = GopherLine InfoLine "" "" Nothing Nothing
 
-menuBuildSection :: Bool -> String -> Maybe [GopherLine] -> [GopherLine] -> [GopherLine]
+menuBuildSection :: Bool -> Text -> Maybe [GopherLine] -> [GopherLine] -> [GopherLine]
 menuBuildSection leadingNewLine sectionName maybePreambleList menuItems =
   [menuBuildBlankLine | leadingNewLine]
     ++ [menuBuildHeading sectionName]
     ++ fromMaybe [] maybePreambleList
     ++ menuItems
 
-menuBuildInfoLine :: String -> GopherLine
+menuBuildInfoLine :: Text -> GopherLine
 menuBuildInfoLine string = GopherLine InfoLine string "" Nothing Nothing
 
-menuBuildInfoLines :: String -> [GopherLine]
-menuBuildInfoLines = map menuBuildInfoLine . lines
+menuBuildInfoLines :: Text -> [GopherLine]
+menuBuildInfoLines = map menuBuildInfoLine . T.lines
 
-menuBuildInfoLinesQuoted :: String -> [GopherLine]
-menuBuildInfoLinesQuoted = map menuBuildInfoLine . map (">" ++) . lines
+menuBuildInfoLinesQuoted :: Text -> [GopherLine]
+menuBuildInfoLinesQuoted = map menuBuildInfoLine . map (">" <>) . T.lines
 
 data GopherMenu = GopherMenu [GopherLine]
 
-instance Show GopherMenu where
-  show (GopherMenu lines) = intercalate "\n" $ map show lines
+menuToText :: GopherMenu -> Text
+menuToText (GopherMenu lines) = T.intercalate "\n" $ map lineToText lines
 

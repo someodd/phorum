@@ -32,6 +32,8 @@ import Data.List (isSuffixOf)
 import Data.Word (Word16)
 import Text.Printf (printf)
 import Data.List (intercalate)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Data.Text (Text, pack)
 
 
 -- Define a data type for the different actions
@@ -83,42 +85,41 @@ decipherSelector selector = case selector of
          _ -> Nothing
 
 -- | Things prefixed by "view*Of" are a view for something. they create responses.
-viewMenuOfThread :: Integer -> IO GopherResponse
-viewMenuOfThread threadId = do
-    maybeThread <- getThreadById threadId
+viewMenuOfThread :: Config -> Integer -> IO GopherResponse
+viewMenuOfThread config threadId = do
+    maybeThread <- getThreadById config.databaseConnection threadId
     case maybeThread of
         Just post -> do
-            replies <- getRepliesByThreadId threadId
-            return $ MenuResponse $ menuViewThread post replies
+            replies <- getRepliesByThreadId config.databaseConnection  threadId
+            return $ MenuResponse $ menuViewThread config post replies
         Nothing ->
             return $ ErrorResponse $ BC.pack $ "There is no thread #" ++ show threadId
 
 {- | Handle creating a response in the form of a text file representing a thread view.
 
 -}
-handleThreadFile :: Integer -> IO GopherResponse
-handleThreadFile threadId = do
-  maybeThread <- getThreadById threadId
+handleThreadFile :: Config -> Integer -> IO GopherResponse
+handleThreadFile config threadId = do
+  maybeThread <- getThreadById config.databaseConnection threadId
   case maybeThread of
     Just post -> do
-      replies <- getRepliesByThreadId threadId
-      return $ FileResponse $ BC.pack $ textViewThread post replies
+      replies <- getRepliesByThreadId config.databaseConnection threadId
+      return $ FileResponse $ encodeUtf8 $ textViewThread config post replies
     Nothing -> do
-        print "print is not thread?!"
         return $ ErrorResponse $ BC.pack $ "There is no thread #" ++ show threadId
 
 -- | Things prefixed by "handleQuery" directly are responding to a request of a broken down selector...
-handleQueryNewThread :: GopherRequest -> IO GopherResponse
-handleQueryNewThread request = do
+handleQueryNewThread :: Config -> GopherRequest -> IO GopherResponse
+handleQueryNewThread config request = do
     case requestSearchString request of
       Just queryPartTheMessage -> do
         -- may throw error if too long! fixme to return error if so... return (ErrorResponse $ BC.pack "Client sent an empty query.")
-        newThreadIdOrFailure <- insertPost $ PostInsert (BC.unpack queryPartTheMessage) Nothing (tupleToIPv6String $ requestClientAddr request)
+        newThreadIdOrFailure <- insertPost config $ PostInsert (decodeUtf8 queryPartTheMessage) Nothing (tupleToIPv6String $ requestClientAddr request)
         case newThreadIdOrFailure of
           Right newThreadId ->
-            viewMenuOfThread newThreadId
+            viewMenuOfThread config newThreadId
           Left failureMessage ->
-            return (ErrorResponse $ BC.pack failureMessage)
+            return (ErrorResponse $ encodeUtf8 failureMessage)
       Nothing ->
         return (ErrorResponse $ BC.pack "Client sent an empty query.")  -- FIXME: should be a gophermap!
 
@@ -127,47 +128,47 @@ word16ToHex :: Word16 -> String
 word16ToHex = printf "%04x"
 
 -- Converts a tuple representing an IPv6 address into its string representation
-tupleToIPv6String :: (Word16, Word16, Word16, Word16, Word16, Word16, Word16, Word16) -> String
+tupleToIPv6String :: (Word16, Word16, Word16, Word16, Word16, Word16, Word16, Word16) -> Text
 tupleToIPv6String (w1, w2, w3, w4, w5, w6, w7, w8) =
-  intercalate ":" $ map word16ToHex [w1, w2, w3, w4, w5, w6, w7, w8]
+  pack $ intercalate ":" $ map word16ToHex [w1, w2, w3, w4, w5, w6, w7, w8]
 
 -- no validation that replying to real thread?
 -- | Things prefixed by "handleQuery" directly are responding to a request of a broken down selector...
-handleQueryReplyToThread :: Integer -> GopherRequest -> IO GopherResponse
-handleQueryReplyToThread threadId request = do
+handleQueryReplyToThread :: Config -> Integer -> GopherRequest -> IO GopherResponse
+handleQueryReplyToThread config threadId request = do
     case requestSearchString request of
       Just queryPartTheMessage -> do
         -- may throw error if too long! fixme to return error if so... return (ErrorResponse $ BC.pack "Client sent an empty query.")
-        postIdOrFailure <- insertPost $ PostInsert (BC.unpack queryPartTheMessage) (Just threadId) (tupleToIPv6String $ requestClientAddr request)
+        postIdOrFailure <- insertPost config $ PostInsert (decodeUtf8 queryPartTheMessage) (Just threadId) (tupleToIPv6String $ requestClientAddr request)
         case postIdOrFailure of
           Right _ ->
-            viewMenuOfThread threadId
+            viewMenuOfThread config threadId
           Left failureMessage ->
-            return (ErrorResponse $ BC.pack failureMessage)
+            return (ErrorResponse $ encodeUtf8 failureMessage)
       Nothing ->
         return (ErrorResponse $ BC.pack "Client sent an empty query.")  -- FIXME: should be a gophermap!
 
-handleThreadIndex :: IO GopherResponse
-handleThreadIndex = do
-    threadPosts <- getThreadsSortedByFreshest
-    threadIndex <- menuViewIndex threadPosts
+handleThreadIndex :: Config -> IO GopherResponse
+handleThreadIndex config = do
+    threadPosts <- getThreadsSortedByFreshest config.databaseConnection
+    threadIndex <- menuViewIndex config threadPosts
     return $ MenuResponse $ threadIndex
 
-handler :: GopherRequest -> IO GopherResponse
-handler request = do
+handler :: Config -> GopherRequest -> IO GopherResponse
+handler config request = do
   let selector = BC.unpack $ requestSelector request
   case decipherSelector selector of
     Just (ThreadIndex) -> do
-      handleThreadIndex
+      handleThreadIndex config
     Just (NewThread) ->
-      handleQueryNewThread request
+      handleQueryNewThread config request
     Just (ViewThreadMenu threadNumber) ->
       -- handleViewThreadMenu postNumber
-      viewMenuOfThread threadNumber
+      viewMenuOfThread config threadNumber
     Just (ViewThreadFile threadNumber) ->
-      handleThreadFile threadNumber
+      handleThreadFile config threadNumber
     Just (ReplyToThread threadNumber) ->
-      handleQueryReplyToThread threadNumber request
+      handleQueryReplyToThread config threadNumber request
       --return (ErrorResponse $ BC.pack "Not yet implemented.")
     Just (ViewReplyFile threadNumber replyNumber) ->
       --handleViewReplyFile threadNumber replyNumber
