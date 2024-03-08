@@ -4,6 +4,8 @@
 
 module Database where
 
+import Config
+
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.ToField
 import Database.PostgreSQL.Simple.ToRow
@@ -12,9 +14,6 @@ import Control.Monad (when, join)
 import Data.Maybe (listToMaybe, isNothing, isJust)
 import Database.PostgreSQL.Simple.FromRow
 import Data.Time.Clock
-
-
-import Config
 import Data.Functor (void)
 
 -- FIXME: just define PostDB
