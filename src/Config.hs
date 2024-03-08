@@ -10,8 +10,15 @@ module Config where
 
 maximumPostLength = undefined
 
+-- | The number of minutes a user must wait before posting a new thread.
+rateLimitMinutesNewThread :: Int
+rateLimitMinutesNewThread = 1
 
+-- | The number of minutes a user must wait before posting a new reply.
+rateLimitMinutesNewReply :: Int
+rateLimitMinutesNewReply = 1
 
+maximumRepliesPerThread :: Integer
 maximumRepliesPerThread = 10
 
 maximumThreads :: Integer
@@ -19,6 +26,7 @@ maximumThreads = 10
 
 -- | The max width used for wrapping infolines when converting blocks of texts into info
 -- lines. UNIMPLEMENTED
+maxWidth :: Integer
 maxWidth = 50
 
 -- COMMON/SHARED
@@ -36,6 +44,10 @@ languageUserWasBannedForThisPost :: String
 languageUserWasBannedForThisPost = "USER WAS BANNED FOR THIS POST"
 
 -- ERRORS ("FRONTEND")
+
+-- | The text to display to a user as an error when they try to post too frequently.
+languagePostRateLimitExceeded :: String
+languagePostRateLimitExceeded = "Post rate limit exceeded."
 
 -- | The text to display to a user as an error when they try to post and are banned, the
 -- text which follows is the actual ban reason/message.

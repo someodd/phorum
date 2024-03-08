@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-...
+  * Rate-limiting, now you can only create a thread once per n minutes and create a reply once per x minutes
 
 ### Fixed
 
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-...
+  * Timestamps in the database stored with timezone information now
 
 ## [0.1.0.0] - 2024-03-04
 

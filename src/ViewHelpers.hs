@@ -6,5 +6,7 @@
 module ViewHelpers where
 
 import Config
+import Database
 
+helperPostMeta :: PostDB -> String
 helperPostMeta post = (languageThreadIndexOpNumberLabel ++ show post.postId) ++ ", " ++ show post.createdAt

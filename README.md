@@ -55,3 +55,5 @@ like.
   * Search!
   * Post rate limit
   * Configuration file
+  * Post length limit (tools!)
+  * Configurable listen/name etc for spacecookie

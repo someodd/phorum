@@ -8,10 +8,10 @@ import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.ToField
 import Database.PostgreSQL.Simple.ToRow
 import Control.Exception (bracket)
-import Control.Monad (when)
-import Data.Maybe (listToMaybe)
+import Control.Monad (when, join)
+import Data.Maybe (listToMaybe, isNothing, isJust)
 import Database.PostgreSQL.Simple.FromRow
-import Data.Time (LocalTime)
+import Data.Time.Clock
 
 
 import Config
@@ -29,7 +29,7 @@ data PostDB = PostDB {
     message     :: String,
     replyTo     :: Maybe Integer,
     postIP      :: String,
-    createdAt   :: LocalTime,
+    createdAt   :: UTCTime,
     bannedForPost :: Bool
 } deriving (Show)
 
@@ -107,20 +107,56 @@ getThreeLatestReplies threadId = bracket connectDb close $ \conn -> do
                 \LIMIT 3) AS latest_replies \
                 \ORDER BY id ASC" (Only threadId) :: IO [PostDB]
 
+{-| 'insertPost' is a function that inserts a new post into the database.
 
--- Function to insert a new Post into the database
+It takes as input a 'PostInsert' record, which contains the message, replyTo, and
+postIP.
+
+The function first checks if the postIP is in the banned_ips table. If it is, the function
+returns a Left value with the ban reason.
+
+If the postIP is not in the banned_ips table, the function checks if the IP has made a
+reply in the last (configurable amount of) n minutes or a thread in the last (configurable
+amount of) x minutes. If it has, the function returns a Left value with an error message.
+
+If the IP has not made a reply in the last minute or a thread in the last five minutes,
+the function proceeds with the insertion of the post into the database. If the insertion
+is successful, the function returns a Right value with the id of the inserted post. If the
+insertion is not successful, the function returns a Left value with an error.
+message.
+
+-}
 insertPost :: PostInsert -> IO (Either String Integer)
 insertPost post = bracket connectDb close $ \conn -> do
     -- Check if the postIP is in the banned_ips table
     bannedIps <- query conn "SELECT reason FROM app_schema.banned_ips WHERE ip = ?" (Only (post.postIP)) :: IO [Only String]
     if null bannedIps
     then do
-        -- IP is not banned, proceed with insertion
-        result <- query conn "INSERT INTO app_schema.posts (message, replyTo, postIP) VALUES (?, ?, ?) RETURNING id" post :: IO [Only Integer]
-        case result of
-            [Only i] -> return $ Right i
-            _ -> return $ Left languageFailedToInsertPost
-    else return $ Left $ languageYouWereBannedLabel ++ (fromOnly $ head bannedIps)
+        -- IP is not banned, check the rate limits for replies and threads
+        lastReply <- checkRateReply conn post.postIP rateLimitMinutesNewReply
+        lastThread <- checkRateThread conn post.postIP rateLimitMinutesNewThread
+        -- FIXME: this needs to have different message for new threads and replies for ratelimit! different flow
+        if (isJust post.replyTo && lastReply) || (isNothing post.replyTo && lastThread)
+        then do
+            -- IP has not made a reply in the last minute or a thread in the last five minutes, proceed with insertion
+            result <- query conn "INSERT INTO app_schema.posts (message, replyTo, postIP) VALUES (?, ?, ?) RETURNING id" post :: IO [Only Integer]
+            case result of
+                [Only i] -> return $ Right i
+                _ -> return $ Left languageFailedToInsertPost
+        else return $ Left languagePostRateLimitExceeded
+    else return $ Left $ languageYouWereBannedLabel ++ (maybe "" fromOnly $ listToMaybe bannedIps)
+
+-- | Returns True if the IP has *not* made a reply in the last n minutes.
+checkRateReply :: Connection -> String -> Int -> IO Bool
+checkRateReply conn ip minutes = do
+    result <- query conn "SELECT EXISTS(SELECT 1 FROM app_schema.posts WHERE postIP = ? AND replyTo IS NOT NULL AND createdAt > NOW() - INTERVAL '? minutes')" (ip, minutes) :: IO [Only Bool]
+    return $ not $ maybe False id $ listToMaybe $ map fromOnly result
+
+-- | Returns True if the IP has *not* made a thread in the last n minutes.
+checkRateThread :: Connection -> String -> Int -> IO Bool
+checkRateThread conn ip minutes = do
+    result <- query conn "SELECT EXISTS(SELECT 1 FROM app_schema.posts WHERE postIP = ? AND replyTo IS NULL AND createdAt > NOW() - INTERVAL '? minutes')" (ip, minutes) :: IO [Only Bool]
+    return $ not $ maybe False id $ listToMaybe $ map fromOnly result
 
 -- Function to get a thread by ID (replyTo must be NULL)
 getThreadById :: Integer -> IO (Maybe PostDB)
@@ -182,12 +218,14 @@ initializeDatabase = bracket connectDb close $ \conn -> do
     execute_ conn "CREATE SCHEMA IF NOT EXISTS app_schema;"
     execute_ conn "SET search_path TO app_schema;"
 
+    -- FIXME/NOTE: is it necessary to have time zone? excess data? literally just doing
+    -- that instead of local time/without because it makes the haskell side easier...
     let createPostsTableSQL = "CREATE TABLE IF NOT EXISTS app_schema.posts (\
                               \id SERIAL PRIMARY KEY, \
                               \message VARCHAR(240) NOT NULL, \
                               \replyTo INTEGER, \
                               \postIP VARCHAR(60), \
-                              \createdAt TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW() NOT NULL, \
+                              \createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL, \
                               \bannedForPost BOOLEAN DEFAULT FALSE, \
                               \FOREIGN KEY (replyTo) REFERENCES posts(id) ON DELETE CASCADE)"
     execute_ conn createPostsTableSQL
