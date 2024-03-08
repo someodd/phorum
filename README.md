@@ -37,10 +37,13 @@ like.
 
 ## Features
 
+Here are some features:
+
   * View threads as an ASCII-art text file
   * Navigate the board as a menu
   * Post threads and replies
   * Ban system
+  * Post rate limiting
 
 ## Features probably coming soon
 
@@ -53,7 +56,6 @@ like.
   * Build with nix
   * Debian package + systemd daemon
   * Search!
-  * Post rate limit
   * Configuration file
   * Post length limit (tools!)
   * Configurable listen/name etc for spacecookie
