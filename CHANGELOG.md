@@ -39,4 +39,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First release, a proof of concept.
 
 [unreleased]: https://github.com/someodd/gopherden/compare/v0.1.0.0...HEAD
+[0.2.0.0]: https://github.com/someodd/gopherden/compare/v0.2.0.0...HEAD
 [0.1.0.0]: https://github.com/someodd/gopherden/release/v0.1.0.0
