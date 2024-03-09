@@ -10,6 +10,7 @@ there you will (hopefully) find:
 
   * More info about gopherden
   * How to connect to a live server running `gopherden` (actually test out a `gopherden` server!)
+  * More info on running a server
 
 ## Try running the server
 
