@@ -62,3 +62,5 @@ Here are some features:
   * Debian package + systemd daemon
   * Search!
   * Post length limit (tools!)
+  * Atom feed
+  * Reply in index view
