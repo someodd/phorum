@@ -3,7 +3,15 @@
 An anonymous, ephemeral text bulletin board system for the Gopher Protocol
 written in Haskell.
 
-## Try it out
+## Try it out + more info
+
+Please see [my showcase for gopherden on my website](https://someodd.github.io/showcase/gopherden/),
+there you will (hopefully) find:
+
+  * More info about gopherden
+  * How to connect to a live server running `gopherden` (actually test out a `gopherden` server!)
+
+## Try running the server
 
 I feel these might be true for why you should try Nix:
 
