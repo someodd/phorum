@@ -214,8 +214,8 @@ listBannedIPs databaseConnection = bracket (connectDb databaseConnection) close 
     query_ conn "SELECT ip, reason FROM app_schema.banned_ips" :: IO [(String, String)]
 
 
-initializeDatabase :: DatabaseConnectionConfig -> IO ()
-initializeDatabase databaseConnection = bracket (connectDb databaseConnection) close $ \conn -> do
+initializeDatabase :: Config -> IO ()
+initializeDatabase config = bracket (connectDb config.databaseConnection) close $ \conn -> do
     execute_ conn "CREATE SCHEMA IF NOT EXISTS app_schema;"
     execute_ conn "SET search_path TO app_schema;"
 
@@ -223,13 +223,13 @@ initializeDatabase databaseConnection = bracket (connectDb databaseConnection) c
     -- that instead of local time/without because it makes the haskell side easier...
     let createPostsTableSQL = "CREATE TABLE IF NOT EXISTS app_schema.posts (\
                               \id SERIAL PRIMARY KEY, \
-                              \message VARCHAR(240) NOT NULL, \
+                              \message VARCHAR(?) NOT NULL, \
                               \replyTo INTEGER, \
                               \postIP VARCHAR(60), \
                               \createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL, \
                               \bannedForPost BOOLEAN DEFAULT FALSE, \
                               \FOREIGN KEY (replyTo) REFERENCES posts(id) ON DELETE CASCADE)"
-    execute_ conn createPostsTableSQL
+    execute conn createPostsTableSQL (Only config.general.maximumPostLength)
 
     let createBannedIPsTableSQL = "CREATE TABLE IF NOT EXISTS app_schema.banned_ips (\
                                    \ip VARCHAR(60) PRIMARY KEY, \

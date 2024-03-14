@@ -1,6 +1,6 @@
 [general]
 # The maximum length of a post
-maximumPostLength = 0
+maximumPostLength = 240
 # The number of minutes a user must wait before posting a new thread.
 rateLimitMinutesNewThread = 1
 # The number of minutes a user must wait before posting a new reply.
@@ -52,6 +52,10 @@ threadIndexOpNumberLabel = "No. "
 singleReplyOmitted = "1 reply omitted, view thread to see it."
 # In the index view a threads replies are omitted from the view if there's more than `n`.
 pluralRepliesOmitted = " replies omitted, view thread to see them all."
+# Client sent an empty string for a post.
+postEmpty = "Client sent an empty query."
+# User attempts to create a post that's too long.
+postTooLong = "Post is too long. Maximum length is %d characters. Your post was %d characters."
 
 [fileViews]
 # Thread view settings

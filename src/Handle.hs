@@ -34,6 +34,10 @@ import Text.Printf (printf)
 import Data.List (intercalate)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Text (Text, pack)
+import qualified Data.Text as T
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
+import Control.Monad.IO.Class (liftIO)
+import Data.Bifunctor (first)
 
 
 -- Define a data type for the different actions
@@ -108,20 +112,56 @@ handleThreadFile config threadId = do
     Nothing -> do
         return $ ErrorResponse $ BC.pack $ "There is no thread #" ++ show threadId
 
+-- | Helper to create an error if the provided text is longer than the maximum post length.
+validatePostMaxLength :: Config -> Text -> Either GopherResponse Text
+validatePostMaxLength config text = do
+  if (T.length text) > (config.general.maximumPostLength)
+    then Left $ ErrorResponse $ BC.pack $ printf (T.unpack config.language.postTooLong) config.general.maximumPostLength (T.length text)
+    else Right text
+
+validatePostNotEmpty :: Config -> GopherRequest -> Either GopherResponse Text
+validatePostNotEmpty config request = do
+  let text = decodeUtf8 $ fromMaybe "" $ requestSearchString request
+  if T.null text
+    then Left $ ErrorResponse $ encodeUtf8 config.language.postEmpty
+    else Right text
+
+postFromRequest :: GopherRequest -> Maybe Integer -> PostInsert
+postFromRequest request threadReplyingToId =
+  PostInsert
+    (decodeUtf8 $ fromMaybe "" $ requestSearchString request)
+    threadReplyingToId
+    (tupleToIPv6String $ requestClientAddr request)
+
+{- | Perform validation on a post request.
+
+Perform error-checks on client data before attempting to connect to database.
+
+Prepares a PostInsert object for insertion into the database based off a GopherRequest.
+
+-}
+postValidator :: Config -> GopherRequest -> Maybe Integer -> Either GopherResponse PostInsert
+postValidator config request replyPostId  = do
+  let validatedPostText = do
+        text <- validatePostNotEmpty config request
+        validatePostMaxLength config text
+  case validatedPostText of
+    Left errorResponse ->
+      Left errorResponse
+    Right _ ->
+      Right $ postFromRequest request replyPostId
+
+-- FIXME: could do with more flat structure by having a validation consistency, maybe Either transformers or something
 -- | Things prefixed by "handleQuery" directly are responding to a request of a broken down selector...
 handleQueryNewThread :: Config -> GopherRequest -> IO GopherResponse
 handleQueryNewThread config request = do
-    case requestSearchString request of
-      Just queryPartTheMessage -> do
-        -- may throw error if too long! fixme to return error if so... return (ErrorResponse $ BC.pack "Client sent an empty query.")
-        newThreadIdOrFailure <- insertPost config $ PostInsert (decodeUtf8 queryPartTheMessage) Nothing (tupleToIPv6String $ requestClientAddr request)
-        case newThreadIdOrFailure of
-          Right newThreadId ->
-            viewMenuOfThread config newThreadId
-          Left failureMessage ->
-            return (ErrorResponse $ encodeUtf8 failureMessage)
-      Nothing ->
-        return (ErrorResponse $ BC.pack "Client sent an empty query.")  -- FIXME: should be a gophermap!
+  let validatedPost = postValidator config request Nothing
+  case validatedPost of
+    Left errorResponse ->
+      return errorResponse
+    Right post -> do
+      newThreadId <- insertPost config post
+      either (return . ErrorResponse . encodeUtf8) (viewMenuOfThread config) newThreadId
 
 -- Converts a Word16 value to a 4-character hexadecimal string
 word16ToHex :: Word16 -> String
@@ -136,17 +176,13 @@ tupleToIPv6String (w1, w2, w3, w4, w5, w6, w7, w8) =
 -- | Things prefixed by "handleQuery" directly are responding to a request of a broken down selector...
 handleQueryReplyToThread :: Config -> Integer -> GopherRequest -> IO GopherResponse
 handleQueryReplyToThread config threadId request = do
-    case requestSearchString request of
-      Just queryPartTheMessage -> do
-        -- may throw error if too long! fixme to return error if so... return (ErrorResponse $ BC.pack "Client sent an empty query.")
-        postIdOrFailure <- insertPost config $ PostInsert (decodeUtf8 queryPartTheMessage) (Just threadId) (tupleToIPv6String $ requestClientAddr request)
-        case postIdOrFailure of
-          Right _ ->
-            viewMenuOfThread config threadId
-          Left failureMessage ->
-            return (ErrorResponse $ encodeUtf8 failureMessage)
-      Nothing ->
-        return (ErrorResponse $ BC.pack "Client sent an empty query.")  -- FIXME: should be a gophermap!
+  let validatedPost = postValidator config request (Just threadId)
+  case validatedPost of
+    Left errorResponse ->
+      return errorResponse
+    Right post -> do
+      replyResult <- insertPost config post
+      either (return . ErrorResponse . encodeUtf8) (const $ viewMenuOfThread config threadId) replyResult
 
 handleThreadIndex :: Config -> IO GopherResponse
 handleThreadIndex config = do

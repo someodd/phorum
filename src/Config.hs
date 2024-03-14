@@ -45,6 +45,8 @@ data LanguageConfig = LanguageConfig
     , createThread :: Text
     , threadReply :: Text
     , returnToIndex :: Text
+    , postTooLong :: Text
+    , postEmpty :: Text
     }
     deriving (Generic, Show, Eq)
 

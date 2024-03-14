@@ -14,6 +14,6 @@ logHandler level str = do
 
 runServer :: Config -> IO ()
 runServer config = do
-  _ <- initializeDatabase config.databaseConnection
+  _ <- initializeDatabase config
   putStrLn "Starting spacecookie server"
   runGopher (defaultConfig { cServerPort = 7000, cLogHandler = Just logHandler }) (handler config)

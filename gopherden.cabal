@@ -1,5 +1,7 @@
 cabal-version: 1.12
 
+tested-with: GHC == 9.4.8
+
 -- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
@@ -56,6 +58,8 @@ library
   build-depends:
       base,
       spacecookie,
+      transformers,
+      either,
       optparse-applicative,
       bytestring,
       postgresql-simple,
