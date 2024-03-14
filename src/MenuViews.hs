@@ -83,7 +83,7 @@ menuViewThread config post replies =
         originalPostLines = menuRepresentOriginalPost config post
         repliesLines = concatMap (menuRepresentThreadReply config) replies
         -- fromJust here bad?! this kind of sucks very bad type handling or whatever
-        createReply = toGopherMenuItems $ [menuBuildQueryLine config.language.threadReply ("/" <> (pack . show $ post.postId) <> "/reply")]
+        createReply = toGopherMenuItems $ createReplyLink config post.postId
         returnToIndex = toGopherMenuItems [menuBuildMenuLine config.language.returnToIndex "/"]
         viewThreadFileLink = toGopherMenuItems [menuBuildFileLine config.language.viewAsFile ("/" <> (pack . show $ post.postId) <> "/file")]
     in
@@ -100,7 +100,7 @@ menuViewIndex config posts = do
         preamble = toGopherMenuItems $ menuBuildInfoLines config.menuViews.indexPreamble
         newThread = toGopherMenuItems [menuBuildQueryLine config.language.createThread "/newthread"]
 
-    pure $ preamble ++ summaries ++ newThread
+    pure $ preamble ++ newThread ++ summaries ++ newThread
 
 concatMapM f xs = concat <$> traverse f xs
 
@@ -113,6 +113,9 @@ repliesOmitted config omitted
     | omitted > 1 =  menuBuildInfoLines $ (pack . show $ omitted) <> config.language.pluralRepliesOmitted
     | otherwise = []
 
+createReplyLink config replyToId = [menuBuildQueryLine config.language.threadReply ("/" <> (pack . show $ replyToId) <> "/reply")]
+
+
 {- | A representation of a `PostDB` (post from the database, namely a thread) for the index view.
 
 -}
@@ -123,10 +126,11 @@ menuRepresentIndexThreadSummary config post = do
     let
         threadMetaInfo = helperPostMeta config post
         threadHeading = menuBuildHeadingParticular threadMetaInfo config.menuViews.indexOpHeadingDecorLeft config.menuViews.indexOpHeadingDecorRight True False
+        createReply = createReplyLink config post.postId
         viewThreadMenuLink = menuBuildMenuLine config.language.viewAsMenu ("/" <> (pack . show $ post.postId) <> "/menu")
         viewThreadFileLink = menuBuildFileLine config.language.viewAsFile ("/" <> (pack . show $ post.postId) <> "/file")
         threadMessage = menuBuildInfoLines $ "\n" <> post.message <> "\n"
         totalRepliesStatus = repliesOmitted config $ replyCount - (length latestReplies)
         latestRepliesLines = concatMap (menuRepresentIndexReply config) latestReplies
 
-    pure $ (toGopherMenuItems $ threadHeading ++ [viewThreadMenuLink, viewThreadFileLink] ++ threadMessage ++ totalRepliesStatus) ++ latestRepliesLines
+    pure $ (toGopherMenuItems $ threadHeading ++ createReply ++ [viewThreadMenuLink, viewThreadFileLink] ++ threadMessage ++ totalRepliesStatus) ++ latestRepliesLines

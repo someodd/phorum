@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * Configurable maximum post length
   * Configuration for client sent an empty query language
   * Config options for spacecookie server
+  * (Hopefully) more accessible reply + new thread links
 
 ### Fixed
 
