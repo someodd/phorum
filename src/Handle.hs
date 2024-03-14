@@ -73,6 +73,7 @@ Note that threads and replies share the same ID system--a post is a post, kinda.
 -}
 decipherSelector :: String -> Maybe Action
 decipherSelector selector = case selector of
+  "" -> Just ThreadIndex
   "/" -> Just ThreadIndex
   "/newthread" -> Just NewThread
   _ -> case extractNumbers selector of
