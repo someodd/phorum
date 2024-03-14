@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+...
+
+### Fixed
+
+...
+
+### Changed
+
+...
+
+## [0.3.0.0] - 2024-03-13
+
+### Added
+
   * Configurable maximum post length
   * Configuration for client sent an empty query language
   * Config options for spacecookie server
@@ -18,20 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   * Give an error for when a post is too long
 
-### Changed
-
-...
-
 ## [0.2.0.0] - 2024-03-08
 
 ### Added
 
   * Rate-limiting, now you can only create a thread once per n minutes and create a reply once per x minutes
   * TOML config!
-
-### Fixed
-
-...
 
 ### Changed
 
@@ -41,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First release, a proof of concept.
 
-[unreleased]: https://github.com/someodd/gopherden/compare/v0.1.0.0...HEAD
-[0.2.0.0]: https://github.com/someodd/gopherden/compare/v0.2.0.0...HEAD
+[unreleased]: https://github.com/someodd/gopherden/compare/v0.3.0.0...HEAD
+[0.3.0.0]: https://github.com/someodd/gopherden/compare/v0.2.0.0...v0.3.0.0
+[0.2.0.0]: https://github.com/someodd/gopherden/compare/v0.1.0.0...v0.2.0.0
 [0.1.0.0]: https://github.com/someodd/gopherden/release/v0.1.0.0
