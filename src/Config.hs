@@ -16,6 +16,15 @@ import GHC.Generics (Generic)
 import Toml
 import Toml qualified
 
+data SpacecookieConfig = SpacecookieConfig
+    { name :: Text
+    , port :: Int
+    }
+    deriving (Generic, Show, Eq, Toml.HasCodec)
+
+spacecookieConfigCodec :: TomlCodec SpacecookieConfig
+spacecookieConfigCodec = Toml.genericCodec
+
 data DatabaseConnectionConfig = DatabaseConnectionConfig
     { connectHost :: Text
     , connectPort :: Int
@@ -113,6 +122,7 @@ data Config = Config
     , general :: GeneralConfig
     , fileViews :: FileViewsConfig
     , menuViews :: MenuViewsConfig
+    , spacecookie :: SpacecookieConfig
     }
     deriving (Generic, Show, Eq)
 
@@ -124,6 +134,7 @@ configCodec =
         <*> Toml.table generalConfigCodec "general" .= general
         <*> Toml.table fileViewsConfigCodec "fileViews" .= fileViews
         <*> Toml.table menuViewsConfigCodec "menuViews" .= menuViews
+        <*> Toml.table spacecookieConfigCodec "spacecookie" .= spacecookie
 
 getConfig :: IO Config
 getConfig = Toml.decodeFile configCodec "config.toml"
