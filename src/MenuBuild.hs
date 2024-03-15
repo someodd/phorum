@@ -13,6 +13,8 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Tuple (swap)
+import Data.List (find)
 
 toGopherMenuItems :: [GopherLine] -> [Gopher.GopherMenuItem]
 toGopherMenuItems = map (\(GopherLine itemType menuText selector maybeServerName maybePort) -> Gopher.Item (toGopherFileType itemType) (encodeUtf8 menuText) (encodeUtf8 selector) (encodeUtf8 <$> maybeServerName) (read . T.unpack <$> maybePort))
@@ -55,24 +57,41 @@ data ItemType
   | Html
   deriving (Eq, Ord, Enum)
 
+itemTypeList :: [(ItemType, String, [String])]
+itemTypeList = 
+  [ (File, "0", ["txt", "doc", "pdf"])
+  , (Directory, "1", [])
+  , (PhoneBookServer, "2", [])
+  , (Error, "3", [])
+  , (BinHexMacintoshFile, "4", ["hqx"])
+  , (DOSArchive, "5", ["zip", "rar", "7z"])
+  , (UnixUuencodedFile, "6", ["uu"])
+  , (IndexSearchServer, "7", [])
+  , (TelnetSession, "8", [])
+  , (BinaryFile, "9", ["bin"])
+  , (RedundantServer, "+", [])
+  , (Tn3270Session, "T", [])
+  , (GifFile, "g", ["gif"])
+  , (ImageFile, "I", ["jpg", "jpeg", "png", "bmp"])
+  , (InfoLine, "i", [])
+  , (Html, "h", ["html", "htm"])
+  ]
+
+lookupItemType :: String -> Maybe ItemType
+lookupItemType str = lookup str [(b, a) | (a, b, _) <- itemTypeList]
+
+lookupString :: ItemType -> Maybe String
+lookupString itemType = lookup itemType [(a, b) | (a, b, _) <- itemTypeList]
+
+lookupExtension :: String -> Maybe ItemType
+lookupExtension ext = fmap (\(a, _, _) -> a) . find ((ext `elem`) . thd) $ itemTypeList
+  where
+    thd (_, _, x) = x
+
 instance Show ItemType where
-  show item = case item of
-    File -> "0"
-    Directory -> "1"
-    PhoneBookServer -> "2"
-    Error -> "3"
-    BinHexMacintoshFile -> "4"
-    DOSArchive -> "5"
-    UnixUuencodedFile -> "6"
-    IndexSearchServer -> "7"
-    TelnetSession -> "8"
-    BinaryFile -> "9"
-    RedundantServer -> "+"
-    Tn3270Session -> "T"
-    GifFile -> "g"
-    ImageFile -> "I"
-    InfoLine -> "i"
-    Html -> "h"
+  show item = case lookupString item of
+    Just str -> str
+    Nothing -> error "lookupString failed"
 
 {- | A GopherMenuItem is a line in a gopher menu/directory.
 

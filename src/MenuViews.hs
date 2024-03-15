@@ -26,7 +26,7 @@ import ViewHelpers
 import Database
 import MenuBuild
 import Config
-import qualified MenuBuild as Gopher
+import LinkDetection
 
 import Data.Text (pack)
 
@@ -46,7 +46,7 @@ menuRepresentOriginalPost :: Config -> PostDB -> [Gopher.GopherMenuItem]
 menuRepresentOriginalPost config post =
     let
         threadHeading = menuBuildHeadingParticular (config.menuViews.threadOpThreadNumberLabel <> (pack . show $ post.postId)) config.menuViews.threadOpHeadingDecorLeft config.menuViews.threadOpHeadingDecorRight False False
-        threadMessage = menuBuildInfoLines post.message
+        threadMessage = parseLink post.message
         wasBanned = wasBannedHelper config.language post.bannedForPost
     in
         toGopherMenuItems $ threadHeading ++ threadMessage ++ wasBanned
@@ -58,7 +58,7 @@ menuRepresentThreadReply :: Config -> PostDB -> [Gopher.GopherMenuItem]
 menuRepresentThreadReply config post =
     let
         replyHeading = menuBuildHeadingParticular (config.menuViews.threadReplyNumberLabel <> (pack . show $ post.postId)) config.menuViews.threadReplyHeadingDecorLeft "" False False
-        replyMessage = menuBuildInfoLines post.message
+        replyMessage = parseLink post.message
     in
         toGopherMenuItems $ replyHeading ++ replyMessage
 
@@ -70,7 +70,7 @@ menuRepresentIndexReply config post =
     let
         replyMeta = "No. " <> (pack . show $ post.postId) <> ", " <> formatUTCTime config post.createdAt
         replyHeading = menuBuildHeadingParticular replyMeta config.menuViews.indexReplyHeadingDecorLeft config.menuViews.indexReplyHeadingDecorRight config.menuViews.indexReplyLeadingBreak config.menuViews.indexReplyTrailingBreak
-        replyMessage = menuBuildInfoLines post.message
+        replyMessage = parseLink post.message
     in
         toGopherMenuItems $ replyHeading ++ replyMessage
 
@@ -129,7 +129,7 @@ menuRepresentIndexThreadSummary config post = do
         createReply = createReplyLink config post.postId
         viewThreadMenuLink = menuBuildMenuLine config.language.viewAsMenu ("/" <> (pack . show $ post.postId) <> "/menu")
         viewThreadFileLink = menuBuildFileLine config.language.viewAsFile ("/" <> (pack . show $ post.postId) <> "/file")
-        threadMessage = menuBuildInfoLines $ "\n" <> post.message <> "\n"
+        threadMessage = parseLink post.message
         totalRepliesStatus = repliesOmitted config $ replyCount - (length latestReplies)
         latestRepliesLines = concatMap (menuRepresentIndexReply config) latestReplies
 
