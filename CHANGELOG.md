@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
   * Make gopher links out of posted URIs!
+  * Special codes: you can define keys associated with strings in your `config.toml`, if a
+    post's entire message is `<somekey>` where `somekey` belongs to an entry in the
+    `specialCodes` table, then the post will be presented as the corresponding value.
 
 ### Fixed
 

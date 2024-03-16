@@ -18,6 +18,32 @@ dateFormat = "%Y-%m-%d %H:%M:%S"
 port = 7000
 name = "localhost"
 
+# These codes can be called upon <likeThis> to replace a post message with the content
+# below, where between the bracket matches a key in this table. You can add your own keys.
+[specialCodes]
+# JGS Bear 7/98
+jgsBear = '''
+        .--. _......._ .--.
+       | ( .'         '. ) |
+        './  0 _   _ 0  \.'
+         |    /  o  \    |
+         \    \ _|_ /    /
+     jgs  '.__ `"""` __.'
+              `"---"`
+'''
+# JGS: Bag of Money 7/97
+jgsBagOfMoney = '''
+          \`\/\/\/`/
+           )======(
+         .'        '.
+        /    _||__   \
+       /    (_||_     \
+      |     __||_)     |
+      |       ||       |
+      '.              .'
+   jgs  '------------
+'''
+
 [databaseConnection]
 connectHost = "localhost"
 connectPort = 5432

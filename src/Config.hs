@@ -15,6 +15,13 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Toml
 import Toml qualified
+import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict (HashMap)
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Map as Map
+import Data.Maybe
 
 data SpacecookieConfig = SpacecookieConfig
     { name :: Text
@@ -115,7 +122,9 @@ data MenuViewsConfig = MenuViewsConfig
 menuViewsConfigCodec :: TomlCodec MenuViewsConfig
 menuViewsConfigCodec = Toml.genericCodec
 
--- FIXME: implement CharWrapper codec
+arbitraryTableCodec :: Toml.Key -> TomlCodec (HashMap Text Text)
+arbitraryTableCodec key = Toml.dimap (Map.fromList . HM.toList) (HM.fromList . Map.toList) (Toml.tableMap Toml._KeyText Toml.text key)
+
 data Config = Config
     { databaseConnection :: DatabaseConnectionConfig
     , language :: LanguageConfig
@@ -123,6 +132,7 @@ data Config = Config
     , fileViews :: FileViewsConfig
     , menuViews :: MenuViewsConfig
     , spacecookie :: SpacecookieConfig
+    , specialCodes :: HashMap Text Text
     }
     deriving (Generic, Show, Eq)
 
@@ -135,6 +145,15 @@ configCodec =
         <*> Toml.table fileViewsConfigCodec "fileViews" .= fileViews
         <*> Toml.table menuViewsConfigCodec "menuViews" .= menuViews
         <*> Toml.table spacecookieConfigCodec "spacecookie" .= spacecookie
+        <*> arbitraryTableCodec "specialCodes" .= specialCodes
 
 getConfig :: IO Config
 getConfig = Toml.decodeFile configCodec "config.toml"
+
+{- | Return the value of a special code if it is found in the given text.
+
+-}
+findSpecialCode :: HashMap Text Text -> Text -> Maybe Text
+findSpecialCode specialCodes text = 
+    let codes = HM.keys specialCodes
+    in listToMaybe [val | code <- codes, ("<" <> code <> ">") `T.isInfixOf` text, let val = fromJust (HM.lookup code specialCodes)]

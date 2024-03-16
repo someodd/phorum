@@ -20,15 +20,24 @@ module MenuViews
     , menuViewThread
     ) where
 
-import Network.Gopher qualified as Gopher (GopherMenuItem (..))
-
 import ViewHelpers
 import Database
 import MenuBuild
 import Config
 import LinkDetection
 
-import Data.Text (pack)
+import Data.Text (pack, Text)
+import Data.Maybe (fromMaybe)
+import Control.Applicative ((<|>))
+import Network.Gopher qualified as Gopher (GopherMenuItem (..))
+
+-- | Like a hook that changes the message for presentation purposes.
+messagePresenter :: Config -> Text -> [GopherLine]
+messagePresenter config message
+    = fromMaybe (menuBuildInfoLines message) $ 
+        ((:[]) <$> parseGopherURI message)
+        <|> ((:[]) <$> parseHttpURI message)
+        <|> (menuBuildInfoLines <$> findSpecialCode config.specialCodes message)
 
 {- | A helper function for displaying the `userWasBannedForThisPost` message.
 
@@ -46,7 +55,7 @@ menuRepresentOriginalPost :: Config -> PostDB -> [Gopher.GopherMenuItem]
 menuRepresentOriginalPost config post =
     let
         threadHeading = menuBuildHeadingParticular (config.menuViews.threadOpThreadNumberLabel <> (pack . show $ post.postId)) config.menuViews.threadOpHeadingDecorLeft config.menuViews.threadOpHeadingDecorRight False False
-        threadMessage = parseLink post.message
+        threadMessage = messagePresenter config post.message
         wasBanned = wasBannedHelper config.language post.bannedForPost
     in
         toGopherMenuItems $ threadHeading ++ threadMessage ++ wasBanned
@@ -58,7 +67,7 @@ menuRepresentThreadReply :: Config -> PostDB -> [Gopher.GopherMenuItem]
 menuRepresentThreadReply config post =
     let
         replyHeading = menuBuildHeadingParticular (config.menuViews.threadReplyNumberLabel <> (pack . show $ post.postId)) config.menuViews.threadReplyHeadingDecorLeft "" False False
-        replyMessage = parseLink post.message
+        replyMessage = messagePresenter config post.message
     in
         toGopherMenuItems $ replyHeading ++ replyMessage
 
@@ -70,7 +79,7 @@ menuRepresentIndexReply config post =
     let
         replyMeta = "No. " <> (pack . show $ post.postId) <> ", " <> formatUTCTime config post.createdAt
         replyHeading = menuBuildHeadingParticular replyMeta config.menuViews.indexReplyHeadingDecorLeft config.menuViews.indexReplyHeadingDecorRight config.menuViews.indexReplyLeadingBreak config.menuViews.indexReplyTrailingBreak
-        replyMessage = parseLink post.message
+        replyMessage = messagePresenter config post.message
     in
         toGopherMenuItems $ replyHeading ++ replyMessage
 
@@ -129,7 +138,7 @@ menuRepresentIndexThreadSummary config post = do
         createReply = createReplyLink config post.postId
         viewThreadMenuLink = menuBuildMenuLine config.language.viewAsMenu ("/" <> (pack . show $ post.postId) <> "/menu")
         viewThreadFileLink = menuBuildFileLine config.language.viewAsFile ("/" <> (pack . show $ post.postId) <> "/file")
-        threadMessage = parseLink post.message
+        threadMessage = messagePresenter config post.message
         totalRepliesStatus = repliesOmitted config $ replyCount - (length latestReplies)
         latestRepliesLines = concatMap (menuRepresentIndexReply config) latestReplies
 

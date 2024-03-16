@@ -69,6 +69,8 @@ library
       tomland,
       text,
       filepath,
+      unordered-containers,
+      containers,
       split,
       network-uri
   default-language: GHC2021
