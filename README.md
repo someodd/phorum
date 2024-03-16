@@ -55,11 +55,3 @@ Here are some features:
   * Post rate limiting
   * Customizable! TOML configuration file!
   * Configurable "secret codes"
-
-## Features probably coming soon
-
-  * Text wrapping
-  * Captcha-like system
-  * Debian package + systemd daemon
-  * Search!
-  * Atom feed
