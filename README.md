@@ -54,6 +54,7 @@ Here are some features:
   * Ban system
   * Post rate limiting
   * Customizable! TOML configuration file!
+  * Configurable "secret codes"
 
 ## Features probably coming soon
 
@@ -61,6 +62,4 @@ Here are some features:
   * Captcha-like system
   * Debian package + systemd daemon
   * Search!
-  * Post length limit (tools!)
   * Atom feed
-  * Reply in index view
