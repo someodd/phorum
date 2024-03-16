@@ -107,14 +107,21 @@ The entirety of text must be a link, otherwise Nothing is returned.
 = Examples
 
 >>> parseHttpURI "http://example.com/"
-Just (GopherLine {gopherType = Html, gopherDisplay = "example.com", gopherSelector = "http://example.com/", gopherHost = "example.com", gopherPort = Nothing})
->>> parseHttpURI "http://example.com/something/whatever.zip"
-Just (GopherLine {gopherType = Html, gopherDisplay = "whatever.zip (example.com)", gopherSelector = "http://example.com/something/whatever.zip", gopherHost = "example.com", gopherPort = Nothi
+Just (GopherLine h "example.com" "http://example.com/" (Just "example.com") Nothing)
+
+>>> lineToText <$> parseHttpURI "https://example.com/something/whatever.zip"
+Just "hwhatever.zip (example.com)\thttps://example.com/something/whatever.zip\texample.com\t"
+
+>>> parseHttpURI "https://www.someodd.zip/"
+
+>>> parseHttpURI "https://www.someodd.zip/ test"
+Nothing
+
 -}
 parseHttpURI :: T.Text -> Maybe GopherLine
 parseHttpURI text = do
     uri <- parseURI (T.unpack text)
-    guard (uriScheme uri == "https:" || uriScheme uri == "http")
+    guard (uriScheme uri == "https:" || uriScheme uri == "http:")
     auth <- uriAuthority uri
     let path = uriPath uri
         serverName = T.pack $ uriRegName auth
