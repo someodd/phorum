@@ -113,6 +113,7 @@ Just (GopherLine h "example.com" "http://example.com/" (Just "example.com") Noth
 Just "hwhatever.zip (example.com)\thttps://example.com/something/whatever.zip\texample.com\t"
 
 >>> parseHttpURI "https://www.someodd.zip/"
+Just (GopherLine h "www.someodd.zip" "https://www.someodd.zip/" (Just "www.someodd.zip") Nothing)
 
 >>> parseHttpURI "https://www.someodd.zip/ test"
 Nothing
@@ -127,7 +128,7 @@ parseHttpURI text = do
         serverName = T.pack $ uriRegName auth
         filename = T.pack $ takeFileName path
         display = if T.null filename then serverName else filename <> " (" <> serverName <> ")"
-    return $ GopherLine Html display (T.pack $ show uri) (Just serverName) Nothing
+    return $ menuBuildHtmlLine display (T.pack $ show uri)
 
 {- | Detect if a given Text is a link (http or gopher), if so we want to transform it into
 a link for a gopher menu.

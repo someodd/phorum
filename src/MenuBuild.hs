@@ -133,6 +133,9 @@ menuBuildSection leadingNewLine sectionName maybePreambleList menuItems =
     ++ fromMaybe [] maybePreambleList
     ++ menuItems
 
+menuBuildHtmlLine :: Text -> Text -> GopherLine
+menuBuildHtmlLine label uri = GopherLine Html label ("URI:" <> uri) Nothing Nothing
+
 menuBuildInfoLine :: Text -> GopherLine
 menuBuildInfoLine string = GopherLine InfoLine string "" Nothing Nothing
 
