@@ -55,3 +55,4 @@ Here are some features:
   * Post rate limiting
   * Customizable! TOML configuration file!
   * Configurable "secret codes"
+  * Handles/parses Gopher and HTTP(S) URIs into menu items
