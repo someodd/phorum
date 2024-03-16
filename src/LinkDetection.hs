@@ -2,6 +2,10 @@
 
 {- | Make gopher links out of Gopher and HTTP URIs.
 
+= Reading
+
+Gopher URI scheme: https://datatracker.ietf.org/doc/html/rfc4266
+
 -}
 module LinkDetection where
 
@@ -16,6 +20,38 @@ import Data.Text qualified as T
 import Network.URI (parseURI, uriAuthority, uriPath, uriPort, uriRegName, uriScheme)
 import System.FilePath (takeExtension)
 import System.FilePath.Posix (takeFileName)
+import Data.Maybe (isJust)
+
+
+{- | Detect if there is a Gopher 'ItemType' in the first part provided Gopher URI path in
+the form of `/itemTypeChar/the-rest` (in accordance with RFC 4266, basically, on Gopher
+URIs, I believe). If so, drop it.
+
+Reference 'MenuBuild.ItemType' to see the list of possible 'ItemType's along with
+its associated lookup functions.
+
+= Examples
+
+>>> dropItemType "/0/book.txt"
+"/book.txt"
+
+>>> dropItemType "/hello/1/world"
+"/hello/1/world"
+
+>>> dropItemType "/1/foo/bar"
+"/foo/bar"
+
+>>> dropItemType "/"
+"/"
+
+>>> dropItemType ""
+""
+
+-}
+dropItemType :: String -> String
+dropItemType string = case take 3 string of
+    ('/' : itemTypeChar : '/' : _) | isJust (lookupItemType [itemTypeChar]) -> drop 2 string
+    _ -> string
 
 {- | Detect if a given Text is a gopher URI, if so we want to transform it into a gopher
 menu link.
@@ -28,15 +64,18 @@ at the file extension.
 = Examples
 
 >>> parseGopherURI "gopher://example.com/"
-Just (GopherLine {gopherType = Menu, gopherDisplay = "example.com", gopherSelector = "1/somemenu", gopherHost = "example.com", gopherPort = 70})
+Just (GopherLine 1 "example.com" "/" (Just "example.com") Nothing)
 >>> parseGopherURI "gopher://gopher.example.org:7070/0/book.txt"
-Just (GopherLine {gopherType = Text, gopherDisplay = "book.txt (gopher.example.org)", gopherSelector = "0/book.txt", gopherHost = "gopher.example.org", gopherPort = 7070})
+Just (GopherLine 0 "book.txt (gopher.example.org)" "/book.txt" (Just "gopher.example.org") (Just "7070"))
 >>> parseGopherURI "gopher://gopher.example.org:7070/0/book.txt test"
 Nothing
 >>> parseGopherURI "something else"
 Nothing
 >>> parseGopherURI "gopher.example.org:7070/0/book.txt"
 Nothing
+>>> lineToText <$> parseGopherURI "gopher://someodd.duckdns.org:7071/1/jgs-archive"
+Just "1jgs-archive (someodd.duckdns.org)\t/jgs-archive\tsomeodd.duckdns.org\t7071"
+
 -}
 parseGopherURI :: T.Text -> Maybe GopherLine
 parseGopherURI text = do
@@ -52,7 +91,7 @@ parseGopherURI text = do
             _ -> Nothing
         itemTypeFromExt = lookupExtension ext
         (itemType :: ItemType) = fromMaybe Directory (itemTypeFromPath <|> itemTypeFromExt)
-        selector = T.pack path
+        selector = T.pack $ dropItemType path
         display = case reverse (splitOn "/" path) of
             (filename : _) | not (null filename) -> T.pack filename <> " (" <> serverName <> ")"
             _ -> if null path || path == "/" then serverName else T.pack $ last $ splitOn "/" path

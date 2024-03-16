@@ -55,7 +55,7 @@ data ItemType
   | ImageFile
   | InfoLine
   | Html
-  deriving (Eq, Ord, Enum)
+  deriving (Eq, Ord, Enum, Bounded)
 
 itemTypeList :: [(ItemType, String, [String])]
 itemTypeList = 
@@ -101,7 +101,7 @@ File type, menu text, selector, server name (optional), port (optional).
 
 None of the fields may use tabs.
 -}
-data GopherLine = GopherLine ItemType Text Text (Maybe Text) (Maybe Text)
+data GopherLine = GopherLine ItemType Text Text (Maybe Text) (Maybe Text) deriving (Show)
 
 lineToText :: GopherLine -> Text
 lineToText (GopherLine itemType menuText selector maybeServerName maybePort) =
