@@ -107,13 +107,13 @@ The entirety of text must be a link, otherwise Nothing is returned.
 = Examples
 
 >>> parseHttpURI "http://example.com/"
-Just (GopherLine h "example.com" "http://example.com/" (Just "example.com") Nothing)
+Just (GopherLine h "example.com" "URL:http://example.com/" Nothing Nothing)
 
 >>> lineToText <$> parseHttpURI "https://example.com/something/whatever.zip"
-Just "hwhatever.zip (example.com)\thttps://example.com/something/whatever.zip\texample.com\t"
+Just "hwhatever.zip (example.com)\tURL:https://example.com/something/whatever.zip\t\t"
 
->>> parseHttpURI "https://www.someodd.zip/"
-Just (GopherLine h "www.someodd.zip" "https://www.someodd.zip/" (Just "www.someodd.zip") Nothing)
+>>> lineToText <$> parseHttpURI "https://www.someodd.zip/"
+Just "hwww.someodd.zip\tURL:https://www.someodd.zip/\t\t"
 
 >>> parseHttpURI "https://www.someodd.zip/ test"
 Nothing

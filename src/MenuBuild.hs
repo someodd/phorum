@@ -134,7 +134,7 @@ menuBuildSection leadingNewLine sectionName maybePreambleList menuItems =
     ++ menuItems
 
 menuBuildHtmlLine :: Text -> Text -> GopherLine
-menuBuildHtmlLine label uri = GopherLine Html label ("URI:" <> uri) Nothing Nothing
+menuBuildHtmlLine label uri = GopherLine Html label ("URL:" <> uri) Nothing Nothing
 
 menuBuildInfoLine :: Text -> GopherLine
 menuBuildInfoLine string = GopherLine InfoLine string "" Nothing Nothing
