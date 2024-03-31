@@ -52,6 +52,7 @@ Here are some features:
   * Navigate the board as a menu
   * Post threads and replies
   * Ban system
+  * Prevents some reposting and unoriginal threads
   * Post rate limiting
   * Customizable! TOML configuration file!
   * Configurable "secret codes"

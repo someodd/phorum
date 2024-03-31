@@ -120,8 +120,18 @@ If the postIP is not in the banned_ips table, the function checks if the IP has 
 reply in the last (configurable amount of) n minutes or a thread in the last (configurable
 amount of) x minutes. If it has, the function returns a Left value with an error message.
 
-If the IP has not made a reply in the last minute or a thread in the last five minutes,
-the function proceeds with the insertion of the post into the database. If the insertion
+When posting a reply: ensure the new reply's contents and IP aren't the same as the
+preceding reply. The point of this is not just to prevent spam, but mostly to prevent
+accidentally reposting by refreshing the page.
+
+When posting a thread: make sure the contents of a thread aren't the same as any other
+thread in the database in general. The point of this is to prevent accidental reposting
+and to keep the threads at least sort of unique/not bump off a thread for duplicate
+content.
+
+Also ensure the IP has not made a reply in the last minute or a thread in the last five minutes.
+
+The function proceeds with the insertion of the post into the database. If the insertion
 is successful, the function returns a Right value with the id of the inserted post. If the
 insertion is not successful, the function returns a Left value with an error.
 message.
@@ -136,16 +146,52 @@ insertPost config post = bracket (connectDb config.databaseConnection) close $ \
         -- IP is not banned, check the rate limits for replies and threads
         lastReply <- checkRateReply conn post.postIP config.general.rateLimitMinutesNewReply
         lastThread <- checkRateThread conn post.postIP config.general.rateLimitMinutesNewThread
-        -- FIXME: this needs to have different message for new threads and replies for ratelimit! different flow
-        if (isJust post.replyTo && lastReply) || (isNothing post.replyTo && lastThread)
-        then do
-            -- IP has not made a reply in the last minute or a thread in the last five minutes, proceed with insertion
-            result <- query conn "INSERT INTO app_schema.posts (message, replyTo, postIP) VALUES (?, ?, ?) RETURNING id" post :: IO [Only Integer]
-            case result of
-                [Only i] -> return $ Right i
-                _ -> return $ Left config.language.failedToInsertPost
-        else return $ Left config.language.postRateLimitExceeded
+        -- Check if the new reply's contents and IP are the same as the preceding reply
+        sameReply <- checkSpamReply conn post
+        -- Check if the contents of a thread are the same as any other thread in the database
+        sameThread <- checkSameThread conn post
+        -- Use guards to match various conditions
+        case () of
+            _ | isJust post.replyTo && not lastReply -> return $ Left config.language.replyRateLimitExceeded
+              | isJust post.replyTo && sameReply -> return $ Left config.language.spamReplyError
+              | isNothing post.replyTo && not lastThread -> return $ Left config.language.threadRateLimitExceeded
+              | isNothing post.replyTo && sameThread -> return $ Left config.language.sameThreadError
+              | otherwise -> do
+                  -- IP has not made a reply in the last minute or a thread in the last five minutes, proceed with insertion
+                  result <- query conn "INSERT INTO app_schema.posts (message, replyTo, postIP) VALUES (?, ?, ?) RETURNING id" post :: IO [Only Integer]
+                  case result of
+                      [Only i] -> return $ Right i
+                      _ -> return $ Left config.language.failedToInsertPost
     else return $ Left $ config.language.youWereBannedLabel <> (maybe "" fromOnly $ listToMaybe bannedIps)
+
+{- | Does this reply share the same contents and IP as the preceding reply (in the thread
+it's replying to)?
+
+-}
+checkSpamReply :: Connection -> PostInsert -> IO Bool
+checkSpamReply conn post = do
+  let sql = 
+        "SELECT EXISTS ( \
+        \  SELECT 1 \
+        \  FROM ( \
+        \    SELECT * \
+        \    FROM app_schema.posts \
+        \    WHERE replyTo = ? \
+        \    ORDER BY createdAt DESC \
+        \    LIMIT 1 \
+        \  ) AS latest_reply \
+        \  WHERE postIP = ? AND message = ? \
+        \) AS match_found;"
+  [Only result :: Only Bool] <- query conn sql (post.replyTo, post.postIP, post.message)
+  return result
+
+{- | Checks to see if the provided thread post's (OP) contents are the same as any other thread.
+
+-}
+checkSameThread :: Connection -> PostInsert -> IO Bool
+checkSameThread conn post = do
+    [Only result :: Only Bool] <- query conn "SELECT EXISTS (SELECT 1 FROM app_schema.posts WHERE message = ? AND replyTo IS NULL)" (Only post.message)
+    return result
 
 -- | Returns True if the IP has *not* made a reply in the last n minutes.
 checkRateReply :: Connection -> Text -> Int -> IO Bool

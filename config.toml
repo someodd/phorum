@@ -58,8 +58,10 @@ viewAsFile = "View as File"
 viewAsMenu = "View as Menu"
 # The text to display when a user was banned for a post.
 userWasBannedForThisPost = "USER WAS BANNED FOR THIS POST"
-# The text to display to a user as an error when they try to post too frequently.
-postRateLimitExceeded = "Post rate limit exceeded."
+# The text to display to a user as an error when they try to create a thread too frequently.
+threadRateLimitExceeded = "Thread post rate limit exceeded."
+# The text to display to a user as an error when they try to create a reply too frequently.
+replyRateLimitExceeded = "Reply rate limit exceeded."
 # The text to display to a user as an error when they try to post and are banned, the text which follows is the actual ban reason/message.
 youWereBannedLabel = "You were banned. Reason: "
 # Ambiguous error/post insertion failure.
@@ -86,6 +88,10 @@ pluralRepliesOmitted = " replies omitted, view thread to see them all."
 postEmpty = "Client sent an empty query."
 # User attempts to create a post that's too long.
 postTooLong = "Post is too long. Maximum length is %d characters. Your post was %d characters."
+# Same IP makes a reply to a thread, where the latest reply has the same IP and contents
+spamReplyError = "I think you made this reply already (same IP and contents as latest reply in this thread). It may be because you tried refreshing an index search result."
+# Duplicate thread error
+sameThreadError = "A thread with the text contents you provided already exists."
 
 [fileViews]
 # Thread view settings

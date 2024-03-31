@@ -48,7 +48,8 @@ data LanguageConfig = LanguageConfig
     { viewAsFile :: Text
     , viewAsMenu :: Text
     , userWasBannedForThisPost :: Text
-    , postRateLimitExceeded :: Text
+    , threadRateLimitExceeded :: Text
+    , replyRateLimitExceeded :: Text
     , youWereBannedLabel :: Text
     , failedToInsertPost :: Text
     , deletedThreadWithId :: Text
@@ -63,6 +64,8 @@ data LanguageConfig = LanguageConfig
     , returnToIndex :: Text
     , postTooLong :: Text
     , postEmpty :: Text
+    , spamReplyError :: Text
+    , sameThreadError :: Text
     }
     deriving (Generic, Show, Eq)
 

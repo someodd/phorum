@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * Special codes: you can define keys associated with strings in your `config.toml`, if a
     post's entire message is `<somekey>` where `somekey` belongs to an entry in the
     `specialCodes` table, then the post will be presented as the corresponding value.
+  * Prevent the creation of threads with a message that already exists as a thread OP
+  * Prevent accidental reposting + some spam by disallowing posting a reply which has the
+    same IP and message as the last reply in the same thread. This is nice for preventing
+    an index search result from being refreshed, when the user intends to simply refresh
+    the thread, and it resulting in an accidental repost.
 
 ### Fixed
 
@@ -20,7 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-...
+  * Rate-limit messages broken down into two separate messages for reply rate limit and
+    new thread rate limit
 
 ## [v0.4.0.0] - 2024-03-14
 
