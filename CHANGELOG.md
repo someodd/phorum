@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+...
+
+### Fixed
+
+...
+
+### Changed
+
+...
+
+## [v0.5.0.0] - 2024-03-30
+
+### Added
+
   * Make gopher links out of posted URIs!
   * Special codes: you can define keys associated with strings in your `config.toml`, if a
     post's entire message is `<somekey>` where `somekey` belongs to an entry in the
@@ -18,10 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     same IP and message as the last reply in the same thread. This is nice for preventing
     an index search result from being refreshed, when the user intends to simply refresh
     the thread, and it resulting in an accidental repost.
-
-### Fixed
-
-...
 
 ### Changed
 
@@ -62,7 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First release, a proof of concept.
 
-[unreleased]: https://github.com/someodd/gopherden/compare/v0.4.0.0...HEAD
+[unreleased]: https://github.com/someodd/gopherden/compare/v0.5.0.0...HEAD
+[0.5.0.0]: https://github.com/someodd/gopherden/compare/v0.4.0.0...v0.5.0.0
 [0.4.0.0]: https://github.com/someodd/gopherden/compare/v0.3.0.0...v0.4.0.0
 [0.3.0.0]: https://github.com/someodd/gopherden/compare/v0.2.0.0...v0.3.0.0
 [0.2.0.0]: https://github.com/someodd/gopherden/compare/v0.1.0.0...v0.2.0.0
