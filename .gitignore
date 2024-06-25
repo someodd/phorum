@@ -4,3 +4,5 @@ result/
 result
 *.deb
 .pgdata/
+package/
+.stack-work/

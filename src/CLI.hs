@@ -1,9 +1,7 @@
-{- | Command line interface.
-
--}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 module CLI (entryPoint) where
 
@@ -13,7 +11,6 @@ import Database (banIP, unbanIP, listBannedIPs)
 import Options.Applicative
 import Config
 
--- Some say partials are bad, but I'm lazy and I frankly just generate a lot of the CLI stuff.
 data Command
   = LaunchServer
   | BanIP { postId :: Integer, reason :: String, deletePost :: Bool }
@@ -47,12 +44,26 @@ parseBanIP = BanIP
       ( long "delete"
      <> help "Delete the post as well as banning the IP" )
 
+data ConfigCommand = ConfigCommand
+  { configPath :: String
+  , command :: Command
+  }
+
+parseConfigCommand :: Parser ConfigCommand
+parseConfigCommand = ConfigCommand
+  <$> strOption
+      ( long "config"
+     <> metavar "CONFIG"
+     <> help "Path to the configuration file" )
+  <*> commands
+
 entryPoint :: IO ()
 entryPoint = do
-  config <- getConfig
-  runCLI config =<< execParser opts
+  configCommand <- execParser opts
+  config <- loadConfig configCommand.configPath
+  runCLI config (configCommand.command)
  where
-  opts = info (commands <**> helper)
+  opts = info (parseConfigCommand <**> helper)
     ( fullDesc
     <> progDesc "Run server or ban an IP"
     <> header "server-cli - a simple CLI for managing your server" )
@@ -80,3 +91,7 @@ runCLI config ListBans = do
   bannedIPs <- listBannedIPs config.databaseConnection
   mapM_ (\(ip, reason) -> putStrLn $ ip ++ " - " ++ reason) bannedIPs
 
+-- FIXME: redundant
+-- Assuming you have a function to load the config from the path
+loadConfig :: String -> IO Config
+loadConfig path = getConfig path -- Modify this to actually load the config from the given path

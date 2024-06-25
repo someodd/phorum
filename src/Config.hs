@@ -23,14 +23,15 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as Map
 import Data.Maybe
 
-data SpacecookieConfig = SpacecookieConfig
+data DaemonConfig = DaemonConfig
     { name :: Text
     , port :: Int
+    , runAsUser :: Text
     }
     deriving (Generic, Show, Eq, Toml.HasCodec)
 
-spacecookieConfigCodec :: TomlCodec SpacecookieConfig
-spacecookieConfigCodec = Toml.genericCodec
+daemonConfigCodec :: TomlCodec DaemonConfig
+daemonConfigCodec = Toml.genericCodec
 
 data DatabaseConnectionConfig = DatabaseConnectionConfig
     { connectHost :: Text
@@ -134,7 +135,7 @@ data Config = Config
     , general :: GeneralConfig
     , fileViews :: FileViewsConfig
     , menuViews :: MenuViewsConfig
-    , spacecookie :: SpacecookieConfig
+    , daemon :: DaemonConfig
     , specialCodes :: HashMap Text Text
     }
     deriving (Generic, Show, Eq)
@@ -147,11 +148,12 @@ configCodec =
         <*> Toml.table generalConfigCodec "general" .= general
         <*> Toml.table fileViewsConfigCodec "fileViews" .= fileViews
         <*> Toml.table menuViewsConfigCodec "menuViews" .= menuViews
-        <*> Toml.table spacecookieConfigCodec "spacecookie" .= spacecookie
+        <*> Toml.table daemonConfigCodec "daemon" .= daemon
         <*> arbitraryTableCodec "specialCodes" .= specialCodes
 
-getConfig :: IO Config
-getConfig = Toml.decodeFile configCodec "config.toml"
+-- FIXME: detect if installed or running in nix?
+getConfig :: FilePath -> IO Config
+getConfig configFilePath = Toml.decodeFile configCodec configFilePath
 
 {- | Return the value of a special code if it is found in the given text.
 

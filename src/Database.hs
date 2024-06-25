@@ -241,7 +241,7 @@ banIP config postId reason delete = bracket (connectDb config.databaseConnection
         putStrLn . unpack $ config.language.ipBannedSuccessfully <> ip
       _ -> putStrLn . unpack $ config.language.postNotFoundOrIpMissing
 
--- Function to unban an IP
+-- | Function to unban an IP
 unbanIP :: Config -> String -> IO ()
 unbanIP config ip = bracket (connectDb config.databaseConnection) close $ \conn -> do
     -- Remove the IP from the banned_ips table
@@ -259,7 +259,7 @@ listBannedIPs :: DatabaseConnectionConfig -> IO [(String, String)]
 listBannedIPs databaseConnection = bracket (connectDb databaseConnection) close $ \conn -> do
     query_ conn "SELECT ip, reason FROM app_schema.banned_ips" :: IO [(String, String)]
 
-
+-- | Set up the database for the application.
 initializeDatabase :: Config -> IO ()
 initializeDatabase config = bracket (connectDb config.databaseConnection) close $ \conn -> do
     execute_ conn "CREATE SCHEMA IF NOT EXISTS app_schema;"

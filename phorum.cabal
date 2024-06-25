@@ -1,0 +1,75 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           phorum
+version:        0.6.0.0
+description:    Please see the README on GitHub at <https://github.com/someodd/phorum#readme>
+homepage:       https://github.com/someodd/phorum#readme
+bug-reports:    https://github.com/someodd/phorum/issues
+author:         Someodd
+maintainer:     someodd@pm.me
+copyright:      2024 Someodd
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/someodd/phorum
+
+library
+  exposed-modules:
+      Config
+      Database
+      LinkDetection
+      Handle
+      Server
+      MenuViews
+      MenuBuild
+      TextViews
+      TextBuild
+      ViewHelpers
+      CLI
+  other-modules:
+      Paths_phorum
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base
+    , bytestring
+    , containers
+    , either
+    , filepath
+    , network-uri
+    , optparse-applicative
+    , postgresql-simple
+    , regex-posix
+    , spacecookie
+    , split
+    , text
+    , time
+    , tomland
+    , transformers
+    , unix
+    , unordered-containers
+  default-language: GHC2021
+
+executable phorum-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_phorum
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , phorum
+    , spacecookie
+  default-language: GHC2021

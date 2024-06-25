@@ -1,0 +1,71 @@
+name: phorum
+version: 0.6.0.0
+description: Please see the README on GitHub at <https://github.com/someodd/phorum#readme>
+homepage: https://github.com/someodd/phorum#readme
+bug-reports: https://github.com/someodd/phorum/issues
+author: Someodd
+maintainer: someodd@pm.me
+copyright: 2024 Someodd
+license: BSD3
+license-file: LICENSE
+
+# Extra files to include in sdist
+extra-source-files:
+  - README.md
+  - CHANGELOG.md
+
+# Repository information
+github: someodd/phorum
+git: https://github.com/someodd/phorum
+
+# Executable configuration
+executables:
+  phorum-exe:
+    main: Main.hs
+    source-dirs: app
+    dependencies:
+      - base
+      - phorum
+      - spacecookie
+    ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+    language: GHC2021
+
+# Library configuration
+library:
+  source-dirs: src
+  exposed-modules:
+    - Config
+    - Database
+    - LinkDetection
+    - Handle
+    - Server
+    - MenuViews
+    - MenuBuild
+    - TextViews
+    - TextBuild
+    - ViewHelpers
+    - CLI
+  other-modules:
+    - Paths_phorum
+  dependencies:
+    - base
+    - spacecookie
+    - transformers
+    - unix
+    - either
+    - optparse-applicative
+    - bytestring
+    - postgresql-simple
+    - regex-posix
+    - time
+    - tomland
+    - text
+    - filepath
+    - unordered-containers
+    - containers
+    - split
+    - network-uri
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  language: GHC2021
+
+# Testing configurations, benchmarks, etc., would be added similarly.

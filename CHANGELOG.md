@@ -19,6 +19,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ...
 
+## [v0.6.0.0] - 2024-06-25: Renamed to Phorum + Packaging
+
+Project renamed to Phorum!
+
+This release is based off a move to start packaging the software so it's more easily used
+and installed on servers. Namely, automation has begun to create a Debian package, but
+probably more options to come!
+
+Part of the switch is I've stopped using Nix for packaging and a dev environment.
+
+I won't mention changes to this repo that are outside the actual software itself in the
+changes below.
+
+### Added
+
+  * Config option for running as a specific user, if `phorum` is ran as root it will
+    switch to the specified user.
+
+### Changed
+
+  * Command line interface so you always specify a path to the config file with
+    `--config`
+  * THe "space cookie" config section is now the "daemon" config section
+
 ## [v0.5.0.0] - 2024-03-30
 
 ### Added
@@ -72,9 +96,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First release, a proof of concept.
 
-[unreleased]: https://github.com/someodd/gopherden/compare/v0.5.0.0...HEAD
-[0.5.0.0]: https://github.com/someodd/gopherden/compare/v0.4.0.0...v0.5.0.0
-[0.4.0.0]: https://github.com/someodd/gopherden/compare/v0.3.0.0...v0.4.0.0
-[0.3.0.0]: https://github.com/someodd/gopherden/compare/v0.2.0.0...v0.3.0.0
-[0.2.0.0]: https://github.com/someodd/gopherden/compare/v0.1.0.0...v0.2.0.0
-[0.1.0.0]: https://github.com/someodd/gopherden/release/v0.1.0.0
+[unreleased]: https://github.com/someodd/phorum/compare/v0.5.0.0...HEAD
+[0.5.0.0]: https://github.com/someodd/phorum/compare/v0.4.0.0...v0.5.0.0
+[0.4.0.0]: https://github.com/someodd/phorum/compare/v0.3.0.0...v0.4.0.0
+[0.3.0.0]: https://github.com/someodd/phorum/compare/v0.2.0.0...v0.3.0.0
+[0.2.0.0]: https://github.com/someodd/phorum/compare/v0.1.0.0...v0.2.0.0
+[0.1.0.0]: https://github.com/someodd/phorum/release/v0.1.0.0

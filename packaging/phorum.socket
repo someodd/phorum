@@ -1,0 +1,6 @@
+[Unit]
+Description=Socket for the Phorum Daemon
+
+[Socket]
+BindIPv6Only=both
+ListenStream=[::]:70
