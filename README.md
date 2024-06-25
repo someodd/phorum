@@ -25,7 +25,7 @@ stack run -- --config etc/config.toml launch
 You may want to run a demo postgres server first:
 
 ```
-docker run --name postgres-server -e POSTGRES_USER=your_username -e POSTGRES_PASSWORD=your_password -e POSTGRES_DB=your_database -p 5432:5432 -d postgres
+docker run --name phorum-postgres-server -e POSTGRES_USER=your_username -e POSTGRES_PASSWORD=your_password -e POSTGRES_DB=your_database -p 5432:5432 -d postgres
 ```
 
 ## Example usage

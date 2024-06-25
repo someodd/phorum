@@ -25,19 +25,26 @@ mkdir -p $TEMPORARY_PKG_DIR/etc/systemd/system
 # Copy the built binary and configuration files to the temporary package directory
 cp ./bin/phorum-exe $TEMPORARY_PKG_DIR/usr/local/bin/phorum
 cp ./packaging/config.toml $TEMPORARY_PKG_DIR/etc/phorum/
+cp ./packaging/phorum.service $TEMPORARY_PKG_DIR/etc/systemd/system/
+cp ./packaging/phorum.socket $TEMPORARY_PKG_DIR/etc/systemd/system/
 
-# Run fpm to create the Debian package
+# Run fpm to create the Debian package.
+#
+# NOTE: I'm not sure why I use both --deb-systemd AND include the .service, .socket files
+# like below.
 fpm -s dir -t deb -n phorum -v $VERSION \
   --description "Phorum Gopher server" \
   --maintainer "someodd <someodd@pm.me>" \
   --url "http://www.someodd.zip/showcase/phorum" \
   --license "GPL" \
-  --deb-systemd packaging/phorum.service \
-  --deb-systemd packaging/phorum.socket \
+  --deb-systemd $TEMPORARY_PKG_DIR/etc/systemd/system/phorum.service \
+  --deb-systemd $TEMPORARY_PKG_DIR/etc/systemd/system/phorum.socket \
   --before-install packaging/pre-install.sh \
   --after-install packaging/post-install.sh \
   -C $TEMPORARY_PKG_DIR \
   usr/local/bin/phorum \
+  etc/systemd/system/phorum.service \
+  etc/systemd/system/phorum.socket \
   etc/phorum/config.toml
 
 # Clean up the temporary package directory
