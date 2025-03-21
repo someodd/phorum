@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.7.0.0] - 2025-03-20: Run a lot of gopher services?
+
 ### Added
 
 * `selectorPrefix` config: you can now shove phroum into something like `/phorum` to make
@@ -89,7 +91,8 @@ changes below.
 
 First release, a proof of concept.
 
-[unreleased]: https://github.com/someodd/phorum/compare/v0.6.0.0...HEAD
+[unreleased]: https://github.com/someodd/phorum/compare/v0.7.0.0...HEAD
+[0.7.0.0]: https://github.com/someodd/phorum/compare/v0.6.0.0...v0.7.0.0
 [0.6.0.0]: https://github.com/someodd/phorum/compare/v0.5.0.0...v0.6.0.0
 [0.5.0.0]: https://github.com/someodd/phorum/compare/v0.4.0.0...v0.5.0.0
 [0.4.0.0]: https://github.com/someodd/phorum/compare/v0.3.0.0...v0.4.0.0

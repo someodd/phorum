@@ -5,6 +5,8 @@ written in Haskell.
 
 There's a Debian package you can install on Ubuntu and Debian alike, I believe.
 
+It's running on [gopher://gopher.someodd.zip/phorum/](gopher://gopher.someodd.zip/phorum/)
+
 ## Try it out + more info
 
 Please see [my showcase for phorum on my website](https://someodd.github.io/showcase/phorum/),
