@@ -3,7 +3,7 @@
 # As of right now simply creates the Debian package. Plans for the future include
 # creating packages for other distributions and maybe BSD as well.
 #
-# `fpm` to be installed.
+# `fpm` to be installed (`gem install fpm`).
 
 # Stop the script if a command fails.
 set -e
@@ -26,7 +26,6 @@ mkdir -p $TEMPORARY_PKG_DIR/etc/systemd/system
 cp ./bin/phorum-exe $TEMPORARY_PKG_DIR/usr/local/bin/phorum
 cp ./packaging/config.toml $TEMPORARY_PKG_DIR/etc/phorum/
 cp ./packaging/phorum.service $TEMPORARY_PKG_DIR/etc/systemd/system/
-cp ./packaging/phorum.socket $TEMPORARY_PKG_DIR/etc/systemd/system/
 
 # Run fpm to create the Debian package.
 #
@@ -38,13 +37,11 @@ fpm -s dir -t deb -n phorum -v $VERSION \
   --url "http://www.someodd.zip/showcase/phorum" \
   --license "GPL" \
   --deb-systemd $TEMPORARY_PKG_DIR/etc/systemd/system/phorum.service \
-  --deb-systemd $TEMPORARY_PKG_DIR/etc/systemd/system/phorum.socket \
   --before-install packaging/pre-install.sh \
   --after-install packaging/post-install.sh \
   -C $TEMPORARY_PKG_DIR \
   usr/local/bin/phorum \
   etc/systemd/system/phorum.service \
-  etc/systemd/system/phorum.socket \
   etc/phorum/config.toml
 
 # Clean up the temporary package directory

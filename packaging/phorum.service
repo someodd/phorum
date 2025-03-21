@@ -1,14 +1,12 @@
 [Unit]
 Description=Phorum Daemon
-Requires=phorum.socket
 After=network.target
 
 [Service]
-Type=simple
 ExecStart=/usr/local/bin/phorum --config /etc/phorum/config.toml launch
-FileDescriptorStoreMax=1
-DynamicUser=true
-Restart=on-failure
+Restart=always
+User=phorum
+Group=phorum
 
 [Install]
 WantedBy=multi-user.target
