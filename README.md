@@ -5,7 +5,7 @@ written in Haskell.
 
 There's a Debian package you can install on Ubuntu and Debian alike, I believe.
 
-It's running on [gopher://gopher.someodd.zip/phorum/](gopher://gopher.someodd.zip/phorum/)
+It's running on [gopher://gopher.someodd.zip/phorum/](gopher://gopher.someodd.zip/1/phorum/)
 
 ## Try it out + more info
 
