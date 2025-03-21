@@ -26,10 +26,12 @@ import MenuBuild
 import Config
 import LinkDetection
 
-import Data.Text (pack, Text)
+import Data.Text (pack, unpack, Text)
 import Data.Maybe (fromMaybe)
 import Control.Applicative ((<|>))
 import Network.Gopher qualified as Gopher (GopherMenuItem (..))
+import System.FilePath ((</>))
+import qualified Data.Text as T
 
 -- | Like a hook that changes the message for presentation purposes.
 messagePresenter :: Config -> Text -> [GopherLine]
@@ -93,10 +95,21 @@ menuViewThread config post replies =
         repliesLines = concatMap (menuRepresentThreadReply config) replies
         -- fromJust here bad?! this kind of sucks very bad type handling or whatever
         createReply = toGopherMenuItems $ createReplyLink config post.postId
-        returnToIndex = toGopherMenuItems [menuBuildMenuLine config.language.returnToIndex "/"]
-        viewThreadFileLink = toGopherMenuItems [menuBuildFileLine config.language.viewAsFile ("/" <> (pack . show $ post.postId) <> "/file")]
+        returnToIndex = toGopherMenuItems [menuBuildMenuLine config.language.returnToIndex (selectorPrefixHelper config "/")]
+        viewThreadFileLink = toGopherMenuItems [menuBuildFileLine config.language.viewAsFile $ selectorPrefixHelper config ("/" <> (pack . show $ post.postId) <> "/file")]
     in
         originalPostLines ++ repliesLines ++ createReply ++ viewThreadFileLink ++ returnToIndex
+
+{- | Helper function for prefixing a selector with the config-based selector prefix.
+
+-}
+selectorPrefixHelper :: Config -> Text -> Text
+selectorPrefixHelper config path = pack $ unpack config.general.selectorPrefix </> unpack (dropLeadingSlashIfExists path)
+  where
+    -- This fixes what I think is a rather unfortunate behavior of </>, which is if the right
+    -- operand begins with a slash, it will just forget the left operand.
+    dropLeadingSlashIfExists :: Text -> Text
+    dropLeadingSlashIfExists t = if "/" `T.isPrefixOf` t then T.drop 1 t else t
 
 {- | Menu view for the thread index, displaying each thread and the latest three replies
 for each, along with how many replies were omitted.
@@ -107,7 +120,7 @@ menuViewIndex config posts = do
     summaries <- concatMapM (menuRepresentIndexThreadSummary config) posts
     let
         preamble = toGopherMenuItems $ menuBuildInfoLines config.menuViews.indexPreamble
-        newThread = toGopherMenuItems [menuBuildQueryLine config.language.createThread "/newthread"]
+        newThread = toGopherMenuItems [menuBuildQueryLine config.language.createThread (selectorPrefixHelper config "newthread")]
 
     pure $ preamble ++ newThread ++ summaries ++ newThread
 
@@ -122,7 +135,7 @@ repliesOmitted config omitted
     | omitted > 1 =  menuBuildInfoLines $ (pack . show $ omitted) <> config.language.pluralRepliesOmitted
     | otherwise = []
 
-createReplyLink config replyToId = [menuBuildQueryLine config.language.threadReply ("/" <> (pack . show $ replyToId) <> "/reply")]
+createReplyLink config replyToId = [menuBuildQueryLine config.language.threadReply $ selectorPrefixHelper config ("/" <> (pack . show $ replyToId) <> "/reply")]
 
 
 {- | A representation of a `PostDB` (post from the database, namely a thread) for the index view.
@@ -136,8 +149,8 @@ menuRepresentIndexThreadSummary config post = do
         threadMetaInfo = helperPostMeta config post
         threadHeading = menuBuildHeadingParticular threadMetaInfo config.menuViews.indexOpHeadingDecorLeft config.menuViews.indexOpHeadingDecorRight True False
         createReply = createReplyLink config post.postId
-        viewThreadMenuLink = menuBuildMenuLine config.language.viewAsMenu ("/" <> (pack . show $ post.postId) <> "/menu")
-        viewThreadFileLink = menuBuildFileLine config.language.viewAsFile ("/" <> (pack . show $ post.postId) <> "/file")
+        viewThreadMenuLink = menuBuildMenuLine config.language.viewAsMenu (selectorPrefixHelper config $ "/" <> (pack . show $ post.postId) <> "/menu")
+        viewThreadFileLink = menuBuildFileLine config.language.viewAsFile (selectorPrefixHelper config $ "/" <> (pack . show $ post.postId) <> "/file")
         threadMessage = messagePresenter config post.message
         totalRepliesStatus = repliesOmitted config $ replyCount - (length latestReplies)
         latestRepliesLines = concatMap (menuRepresentIndexReply config) latestReplies

@@ -74,7 +74,8 @@ languageConfigCodec :: TomlCodec LanguageConfig
 languageConfigCodec = Toml.genericCodec
 
 data GeneralConfig = GeneralConfig
-    { maximumPostLength :: Int
+    { selectorPrefix :: Text
+    , maximumPostLength :: Int
     , rateLimitMinutesNewThread :: Int
     , rateLimitMinutesNewReply :: Int
     , maximumRepliesPerThread :: Integer

@@ -9,15 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-...
-
-### Fixed
-
-...
-
-### Changed
-
-...
+* `selectorPrefix` config: you can now shove phroum into something like `/phorum` to make
+  Gopher reverse proxy experience better
 
 ## [v0.6.0.0] - 2024-06-25: Renamed to Phorum + Packaging
 

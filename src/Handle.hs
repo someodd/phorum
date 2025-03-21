@@ -38,6 +38,7 @@ import qualified Data.Text as T
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
+import System.FilePath ((</>))
 
 
 -- Define a data type for the different actions
@@ -57,6 +58,9 @@ extractNumbers input = map read $ getAllTextMatches $ input =~ ("[0-9]+" :: Stri
 
 {- | Returns the "parts" of a selector we are concerned with.
 
+You can define a selector prefix in case phorum is acting as if it's in a subdirectory.
+Otherwise you can pass `""` as the prefix.
+
 There are only a few allowed selectors with associated actions
 
   - `/` - the thread index
@@ -71,8 +75,8 @@ There are only a few allowed selectors with associated actions
 Note that threads and replies share the same ID system--a post is a post, kinda.
 
 -}
-decipherSelector :: String -> Maybe Action
-decipherSelector selector = case selector of
+decipherSelector :: String -> String -> Maybe Action
+decipherSelector selectorPrefix selector = case drop (length selectorPrefix) selector of
   "" -> Just ThreadIndex
   "/" -> Just ThreadIndex
   "/newthread" -> Just NewThread
@@ -194,7 +198,7 @@ handleThreadIndex config = do
 handler :: Config -> GopherRequest -> IO GopherResponse
 handler config request = do
   let selector = BC.unpack $ requestSelector request
-  case decipherSelector selector of
+  case decipherSelector (T.unpack config.general.selectorPrefix) selector of
     Just (ThreadIndex) -> do
       handleThreadIndex config
     Just (NewThread) ->

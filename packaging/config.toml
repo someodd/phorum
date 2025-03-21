@@ -1,4 +1,7 @@
 [general]
+# The prefix which will act as the suffice of menu links. In other words,
+# this makes it easier for phorum to run under a subdirectory like /phorum.
+selectorPrefix = "/phorum"
 # The maximum length of a post
 maximumPostLength = 240
 # The number of minutes a user must wait before posting a new thread.

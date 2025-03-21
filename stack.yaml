@@ -72,4 +72,3 @@ extra-deps:
 # compiler-check: newer-minor
 build:
   haddock: true
-
